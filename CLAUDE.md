@@ -48,3 +48,4 @@ location: `raw/`
 ## Style
 - Keep SQL lowercase, 2 space indent
 - Code comments are a cheat-meal, not a regular diet. Place them only where it is absolutely essential for future-self.
+- Documentation: extremely concise, capture only essence, something that can be explained to business stakeholders.
