@@ -27,7 +27,8 @@ gross as (
     sum(case when gross_status = 'matched' then gross_diff_usd else 0 end) as matched_usd,
     sum(case when gross_status = 'explained' then gross_diff_usd else 0 end) as explained_usd,
     sum(case when gross_status = 'unexplained' then gross_diff_usd else 0 end) as unexplained_usd,
-    sum(psp_amount_usd_period) - sum(engine_amount_usd_period) as control_usd
+    sum(psp_amount_usd_period) + sum(psp_amount_usd_duplicate_period)
+      - sum(engine_amount_usd_period) as control_usd
   from classified
   where in_period
   group by 1

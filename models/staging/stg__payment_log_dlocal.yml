@@ -1,0 +1,65 @@
+version: 2
+
+models:
+  - name: stg__payment_log_dlocal
+    description: >-
+      dLocal transactions, one row per transaction outcome. Two things in the raw file will
+      corrupt a sum if taken at face value: local_amount is in minor units scaled by the row's
+      own currency_exponent (CLP carries 0, the other four carry 2), and fx_rate is inverted —
+      local units per USD, the reciprocal of fx_rates.usd_rate. Neither is used for pricing here;
+      the reconciliation restates both sides at the published rate. One transaction ships twice
+      in the export, so identical rows are collapsed and the surplus is carried in
+      amount_local_duplicate rather than dropped. Timestamps are already UTC and are dLocal's
+      settlement time — there is no authorisation timestamp in the file.
+    columns:
+      - name: order_ref
+        description: dLocal's invoice_id. Joins to the engine log's order_id.
+        data_tests: [not_null]
+
+      - name: psp_reference
+        description: >-
+          dLocal's transaction_id. Unlike Adyen, dLocal mints a fresh id per refund and the engine
+          records that same id, so it agrees with psp_reference on every row. Corroboration, not
+          the join key.
+        data_tests: [not_null]
+
+      - name: operation_type
+        description: sale or refund. dLocal reports no chargebacks in the period.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [sale, refund]
+
+      - name: status
+        description: >-
+          settled, declined or disputed. Disputed is dLocal's IN_MEDIATION — the money is
+          contested and settlement is not confirmed, so it does not count as money that moved.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [settled, declined, disputed]
+
+      - name: amount_local
+        description: Amount attempted, in minor units scaled by currency_exponent. Signed — refunds negative.
+        data_tests: [not_null]
+
+      - name: amount_local_settled
+        description: Money that actually moved. Zero on a decline and on a disputed transaction.
+        data_tests: [not_null]
+
+      - name: amount_local_duplicate
+        description: >-
+          Value of the surplus copies where the export ships a transaction more than once.
+          Null on every row the file states once.
+
+      - name: fee_usd_native
+        description: >-
+          dLocal charges in USD, not in the transaction currency, so the fee needs no conversion.
+          Populated on every row including declines — whether dLocal actually bills a rejected
+          attempt is not knowable from the file, so only settled sales are carried into the fee
+          reconciliation.
+
+      - name: net_local
+        description: Always null. dLocal reports no net column, and its fee is not in the local currency.

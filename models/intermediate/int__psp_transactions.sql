@@ -2,6 +2,8 @@ with
 
 providers as (
   select * from {{ ref('stg__payment_log_adyen') }}
+  union all by name
+  select * from {{ ref('stg__payment_log_dlocal') }}
 ),
 
 contracts as (
@@ -80,9 +82,11 @@ final as (
     amount_local,
     amount_local_settled,
     amount_local_authorised,
+    amount_local_duplicate,
     fee_commission_local,
     fee_markup_local,
     fee_local,
+    fee_usd_native,
     net_local,
     percent_fee,
     fixed_fee,
@@ -91,7 +95,11 @@ final as (
     fx_rate_recon,
     cast(round(amount_local * fx_rate_recon, 2) as decimal(18, 2)) as amount_usd,
     cast(round(amount_local_settled * fx_rate_recon, 2) as decimal(18, 2)) as amount_usd_settled,
-    cast(round(fee_local * fx_rate_recon, 2) as decimal(18, 2)) as fee_usd,
+    cast(round(amount_local_duplicate * fx_rate_recon, 2) as decimal(18, 2)) as amount_usd_duplicate,
+    coalesce(
+      fee_usd_native,
+      cast(round(fee_local * fx_rate_recon, 2) as decimal(18, 2))
+    ) as fee_usd,
     cast(round(fee_local_contracted * fx_rate_recon, 2) as decimal(18, 2)) as fee_usd_contracted,
     created_at_utc,
     settled_at_utc,

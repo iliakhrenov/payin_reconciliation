@@ -12,8 +12,20 @@ models:
       Grain: one row per psp x order_ref x operation_type.
     columns:
       - name: psp
-        description: Provider. Currently adyen only.
+        description: Provider. adyen and dlocal.
         data_tests: [not_null]
+
+      - name: fee_usd
+        description: >-
+          What the provider charged, in USD. Most providers state a fee in the transaction
+          currency and it is converted here; dLocal charges in USD natively, so fee_usd_native
+          takes precedence and no conversion is applied to it.
+
+      - name: amount_usd_duplicate
+        description: >-
+          Value of the surplus copies where a provider export ships a transaction more than once.
+          Staging counts the transaction once; this keeps the surplus visible so the report still
+          ties to the file as delivered. Null everywhere the export is clean.
 
       - name: fx_rate_recon
         description: Published rate used to state this row in USD. 1.0 for USD, which is not published.

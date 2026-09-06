@@ -1,0 +1,83 @@
+version: 2
+
+models:
+  - name: int__recon_matched
+    description: >-
+      The spine: every provider transaction and every engine transaction on one row, joined but
+      not yet judged. A full outer join, so a row missing from either side survives as a row with
+      one half null — that absence is a finding, and an inner join would delete it silently.
+      The engine arrives already FX-corrected and signed (refunds and chargebacks negative), the
+      provider side already priced at the same published rate, so the two amount columns are
+      directly comparable and every difference here is about the transaction, never the rate.
+      Nothing is classified at this layer; int__recon_classified does that. Grain: one row per
+      psp x order_ref x operation_type, enforced by assert_recon_grain.
+    columns:
+      - name: psp
+        description: Provider, from whichever side has the row.
+        data_tests: [not_null]
+
+      - name: order_ref
+        description: >-
+          The order reference both sides agree on — the engine's order_id, the provider's own
+          merchant or invoice reference. The join key. Not the PSP reference: providers differ on
+          whether a refund reuses the original sale's reference or gets a fresh one.
+        data_tests: [not_null]
+
+      - name: operation_type
+        description: sale, refund or chargeback. Part of the key — one order can carry a sale and its reversal.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [sale, refund, chargeback]
+
+      - name: in_engine
+        description: >-
+          Whether the backend logged this transaction. False means the provider reported something
+          the backend never saw.
+        data_tests: [not_null]
+
+      - name: in_psp
+        description: >-
+          Whether the provider reported this transaction. False means the backend booked something
+          the provider is silent on.
+        data_tests: [not_null]
+
+      - name: engine_amount_usd_settled
+        description: >-
+          Money the backend says moved, restated at the published as-of rate. Zero on a declined
+          attempt: both sides carry the amount attempted, but only settlement is worth dollars.
+
+      - name: engine_amount_usd_booked
+        description: >-
+          What the backend actually booked, untouched. Kept beside the restated figure so the
+          engine's own FX faults stay measurable instead of being quietly corrected away.
+
+      - name: psp_amount_usd_duplicate
+        description: >-
+          Value of surplus copies where a provider export ships a transaction more than once.
+          Held apart from psp_amount_usd_settled so the transaction counts once while the file
+          still ties to what was delivered.
+
+      - name: diff_local
+        description: >-
+          Provider less engine, in the transaction currency. The comparison that matters first —
+          USD introduces rate noise, local does not.
+        data_tests: [not_null]
+
+      - name: diff_usd
+        description: >-
+          Provider less engine in USD, ignoring which period each side fell in. The period-scoped
+          version lives in int__recon_classified; this one is here so a matched row can be proved
+          to have no variance at all.
+        data_tests: [not_null]
+
+      - name: engine_period
+        description: >-
+          Month the backend recognised the transaction — settlement where there is one, otherwise
+          the attempt. Null where the backend has no row.
+
+      - name: psp_period
+        description: >-
+          Month the provider recognised it, on the same rule. Where the two differ, the transaction
+          straddles the month end and is reported as a timing difference rather than netted away.

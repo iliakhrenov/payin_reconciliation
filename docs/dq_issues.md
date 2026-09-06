@@ -27,3 +27,11 @@ The 2 exceptions are real anomalies worth carrying into the reconciliation:
 
 5. minor: 3 gaps in the txn_id sequence (107981, 107985, 107988) and one in order_id (507811). Possible "provider has it, engine doesn't" leads — not an engine-log defect.
 6. Adyen emits two rows per transaction (Authorised + Settled). That's the next fan-out trap, and it'll need a record-type filter before the join.
+
+7. dLocal profiling closed out items 1–3 and added one engine defect:
+
+- **item 3 is not an engine bug.** dLocal's export carries the same refund-before-sale sequence for ORD-506947 — refund 2026-07-03 12:56, sale 17:55 — identically to the engine. Both systems agree, so it is a provider sequencing oddity, not a log defect. Still outside June.
+- **items 1–2 are all dLocal rows.** TXN-107952/107963/107964/107965 overstate June dLocal by $200,678.97 combined, 99.6% of it TXN-107965. dLocal independently reports the corrected figure on every one, so the correction is evidenced.
+- **new: ORD-507807 refund is under-booked.** The engine books BRL 59.97 against dLocal's BRL 99.95 — exactly 30% of the sale where dLocal refunded 50%. dLocal moved the money; the engine understates the refund by BRL 39.98 ($7.36).
+- **unresolved, likely provider-side: ORD-507812.** Engine has a settled CLP 6,990 sale ($7.42) with psp_reference DL-90001317. dLocal transaction ids run dense 90000001–90001319 across both sides and DL-90001317 is the only id missing from the export, so the id was minted — this reads as an export omission, not an engine invention. Needs dLocal to confirm.
+

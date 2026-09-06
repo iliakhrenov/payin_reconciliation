@@ -43,6 +43,6 @@ All 9 files load. Row counts after header removal:
 
 Pre-processing makes the bytes readable, nothing more. These are interpretation, and are handled in staging with the calls recorded in [`assumptions.md`](assumptions.md):
 
-PayPal EU decimal commas and mixed date formats · dLocal minor units and inverted FX direction · timezone alignment (Adyen Europe/Amsterdam, Google Play America/Los_Angeles → UTC) · provider status vocabularies.
+PayPal EU decimal commas and mixed date formats · dLocal minor units, inverted FX direction and one duplicated export line · timezone alignment (Adyen Europe/Amsterdam, Google Play America/Los_Angeles → UTC) · provider status vocabularies.
 
 Profiling a provider export before staging it follows the `profile-psp-export` skill (`.claude/skills/`); results land in `docs/profiling__<psp>.md`.

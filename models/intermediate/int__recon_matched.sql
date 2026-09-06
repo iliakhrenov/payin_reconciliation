@@ -70,6 +70,8 @@ joined as (
     psp.amount_local_settled as psp_amount_local_settled,
     psp.amount_local_authorised as psp_amount_local_authorised,
     psp.amount_usd_settled as psp_amount_usd_settled,
+    psp.amount_local_duplicate as psp_amount_local_duplicate,
+    psp.amount_usd_duplicate as psp_amount_usd_duplicate,
     psp.fee_local as psp_fee_local,
     psp.fee_usd as psp_fee_usd,
     psp.fee_local_contracted,

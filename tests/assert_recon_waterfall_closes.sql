@@ -9,7 +9,7 @@ totals as (
     sum(engine_amount_usd_booked_period) as booked_usd,
     sum(bug_diff_usd) as bugs_usd,
     sum(gross_diff_usd) as gross_usd,
-    sum(psp_amount_usd_period) as psp_usd
+    sum(psp_amount_usd_period) + sum(psp_amount_usd_duplicate_period) as psp_usd
   from {{ ref('int__recon_classified') }}
   where in_period
   group by 1

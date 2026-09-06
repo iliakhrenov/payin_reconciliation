@@ -16,16 +16,25 @@ scoped as (
     case when engine_period = {{ period }} then coalesce(engine_amount_usd_booked, 0) else 0 end
       as engine_amount_usd_booked_period,
     case when psp_period = {{ period }} then coalesce(psp_amount_usd_settled, 0) else 0 end
-      as psp_amount_usd_period
+      as psp_amount_usd_period,
+    case when psp_period = {{ period }} then coalesce(psp_amount_usd_duplicate, 0) else 0 end
+      as psp_amount_usd_duplicate_period
   from matched
 ),
 
 classified as (
   select
     *,
-    psp_amount_usd_period - engine_amount_usd_period as gross_diff_usd,
+    psp_amount_usd_period + psp_amount_usd_duplicate_period - engine_amount_usd_period
+      as gross_diff_usd,
     engine_amount_usd_period - engine_amount_usd_booked_period as bug_diff_usd,
-    case when psp_in_period then coalesce(fee_usd_contracted - psp_fee_usd, 0) else 0 end as net_diff_usd,
+    case
+      when not psp_in_period then 0
+      when fee_usd_contracted is not null then fee_usd_contracted - psp_fee_usd
+      when in_psp and operation_type = 'sale' and psp_status = 'settled'
+        then -coalesce(psp_fee_usd, 0)
+      else 0
+    end as net_diff_usd,
     case
       when not in_engine then null
       when engine_fx_variance_reason = 'none' then 'matched'
@@ -35,17 +44,27 @@ classified as (
       when fee_local_contracted is not null and psp_fee_local > fee_local_contracted then 'psp_fee_overcharge'
       when fee_local_contracted is not null and psp_fee_local < fee_local_contracted then 'psp_fee_undercharge'
       when fee_local_contracted is not null then 'matched'
+      when in_psp and operation_type = 'sale' and psp_status = 'settled' and coalesce(psp_fee_usd, 0) <> 0
+        then 'psp_claims_fee_out_of_contract'
       when in_psp and operation_type = 'sale' and psp_status = 'settled' then 'fee_not_contracted'
     end as net_cause,
     case
       when not in_engine and operation_type = 'chargeback' then 'psp_claims_chargeback'
       when not in_engine and operation_type = 'sale' then 'psp_claims_sale'
+      when not in_psp and engine_status = 'settled' then 'engine_claims_' || operation_type
       when engine_status = 'settled' and psp_status = 'declined' then 'psp_claims_declined'
+      when engine_status = 'settled' and psp_status = 'disputed' then 'psp_claims_disputed'
       when psp_amount_local_authorised is not null
         and psp_amount_local_settled <> psp_amount_local_authorised
         and engine_amount_local_settled = psp_amount_local_authorised then 'psp_claims_partial_capture'
       when engine_period is distinct from psp_period then 'psp_claims_captured_different_period'
-      when psp_amount_usd_period - engine_amount_usd_period = 0 then 'matched'
+      when psp_amount_usd_duplicate_period <> 0
+        and psp_amount_local_settled = engine_amount_local_settled then 'psp_claims_duplicate_row'
+      when psp_amount_usd_period + psp_amount_usd_duplicate_period - engine_amount_usd_period = 0 then 'matched'
+      when psp_currency = engine_currency
+        and psp_amount_local_settled = engine_amount_local_settled then 'psp_fx_date_basis'
+      when psp_currency = engine_currency
+        and engine_status = 'settled' and psp_status = 'settled' then 'psp_claims_different_amount'
       else 'unexplained'
     end as gross_cause
   from scoped
