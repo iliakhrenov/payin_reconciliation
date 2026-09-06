@@ -1,0 +1,4 @@
+psp,account,valid_from,percent_fee,fixed_fee,fixed_fee_currency
+adyen,LumoECOM_EU,2026-01-01,2.5,0.00,
+adyen,LumoAPP_US,2026-01-01,2.5,0.00,
+google_play,LumoPlayMain,2026-01-01,15.0,0.00,
