@@ -8,3 +8,6 @@ __pycache__/
 target/
 dbt_packages/
 logs/
+
+# derived from raw/ by scripts/prepare_inputs.py
+staged/

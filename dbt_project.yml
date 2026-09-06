@@ -1,0 +1,21 @@
+name: payin_reconciliation
+version: 1.0.0
+config-version: 2
+profile: payin_reconciliation
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+test-paths: ["tests"]
+clean-targets: ["target", "dbt_packages"]
+
+flags:
+  send_anonymous_usage_stats: false
+
+models:
+  payin_reconciliation:
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: view
+    marts:
+      +materialized: table

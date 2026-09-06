@@ -1,0 +1,9 @@
+payin_reconciliation:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: payin.duckdb
+      threads: 4
+      settings:
+        TimeZone: "UTC"

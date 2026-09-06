@@ -1,33 +1,46 @@
 # Pre-processing
 
-Everything done to the provider exports **before** dbt reads them.
-
-Rule: `raw/` is immutable — nothing is ever written back into it. Pre-processing reads
-from `raw/` and writes to `staged/`. dbt sources point at `staged/` where a staged copy
-exists, and at `raw/` otherwise.
-
-Scope is deliberately narrow: pre-processing makes the *bytes* trustworthy. Anything that
-requires interpreting a value is a modelling decision and lives in dbt staging, recorded in
-[`assumptions.md`](assumptions.md).
-
-## Steps
-
-### 1. PayPal EU — encoding normalization to UTF-8
-
-PayPal EU exports in Windows-1252 (cp1252). Every other file is already UTF-8 and passes through untouched.
+`raw/` is immutable. One step runs before dbt, writing normalized copies to `staged/`:
 
 ```bash
-uv run python scripts/normalize_encoding.py \
-  raw/paypal_eu_activity_20260601_20260703.csv \
-  staged/paypal_eu_activity_20260601_20260703.csv
+uv run python scripts/prepare_inputs.py
 ```
 
-`scripts/normalize_encoding.py` detects the encoding (BOM, then a UTF-8 probe, then the declared cp1252), decodes it, and normalizes accents and line endings.
+dbt reads `staged/` only. Every file is decoded to UTF-8, accents normalized (NFC), line endings unified.
 
-Three choices, each guarding a way the file goes wrong without anyone noticing:
+## Why
 
-- **UTF-8 is tried before cp1252.** If PayPal ever switches their export to UTF-8, forcing cp1252 on it turns `é` into `Ã©` — corrupt, but no error.
-- **A byte that will not decode fails the run.** It means the declared encoding is wrong. Better a stopped pipeline than merchant names full of `�` and a reconciliation that half-works.
-- **Accents are normalized (NFC).** The same character has two valid encodings; left mixed, they split joins into phantom duplicates.
+Two defects in the provider exports would otherwise corrupt the reconciliation silently:
 
-Result: 1,894 rows, names intact (`Jürgen Müller`, `Søren Kjær`). Re-running on the output changes nothing, and an undecodable byte is confirmed to stop the run.
+- **PayPal EU ships Windows-1252, not UTF-8.** Read as UTF-8 it fails; read carelessly it mojibakes — `Jürgen` becomes `JÃ¼rgen`. Names then split joins into phantom duplicates.
+- **Google Play's report preamble ends in a bare newline while every data row ends CRLF.** Mixed endings make DuckDB refuse the file outright. Found when the file would not load at all.
+
+Three rules guard against the versions of this we have not seen yet:
+
+- **UTF-8 is tried before the declared encoding.** If a provider switches to UTF-8, forcing the old encoding corrupts accents with no error.
+- **A byte that will not decode stops the run.** Better a failed pipeline than merchant names full of `�` and a reconciliation that half-works.
+- **Accents are normalized.** The same character has two valid encodings; left mixed, they split joins.
+
+## Result
+
+All 9 files load. Row counts after header removal:
+
+| Source | Rows | Note |
+| --- | --- | --- |
+| payment_engine_log | 7,988 | |
+| paypal_us_activity | 2,167 | |
+| paypal_eu_activity | 1,893 | decoded cp1252 |
+| adyen_payment_accounting | 3,413 | |
+| dlocal_transactions | 1,319 | |
+| google_play_earnings_202606 | 1,544 | preamble skipped |
+| google_play_earnings_202607_partial | 78 | preamble skipped |
+| fx_rates | 204 | |
+| fee_schedule | 3 | adyen ×2, google_play ×1 |
+
+`staged/_manifest.json` records the encoding used and a SHA-256 per file — the audit trail for which bytes were read.
+
+## Left to dbt
+
+Pre-processing makes the bytes readable, nothing more. These are interpretation, and are handled in staging with the calls recorded in [`assumptions.md`](assumptions.md):
+
+PayPal EU decimal commas and mixed date formats · dLocal minor units and inverted FX direction · timezone alignment (Adyen Europe/Amsterdam, Google Play America/Los_Angeles → UTC) · provider status vocabularies.
