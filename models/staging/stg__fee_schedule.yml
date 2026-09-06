@@ -1,0 +1,23 @@
+version: 2
+
+models:
+  - name: stg__fee_schedule
+    description: >-
+      Contracted provider fees, keyed by provider and merchant account and dated from valid_from.
+      Coverage is partial by design — only providers we hold a contract for appear, so a settled
+      transaction with no matching row is unverifiable rather than wrong.
+    columns:
+      - name: psp
+        data_tests: [not_null]
+      - name: psp_account
+        description: Merchant account the rate applies to. Joins to int__psp_transactions.psp_account.
+        data_tests: [not_null]
+      - name: valid_from
+        description: First day the rate applies. Latest row on or before the transaction date wins.
+        data_tests: [not_null]
+      - name: percent_fee
+        description: Percentage of gross, in percent (2.5 means 2.5%).
+        data_tests: [not_null]
+      - name: fixed_fee
+        description: Per-transaction fixed fee in fixed_fee_currency. Zero across every contract on file.
+        data_tests: [not_null]

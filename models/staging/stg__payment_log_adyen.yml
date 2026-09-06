@@ -1,0 +1,60 @@
+version: 2
+
+models:
+  - name: stg__payment_log_adyen
+    description: >-
+      Adyen payment accounting, collapsed to one row per transaction. Adyen emits a row per
+      lifecycle event — Authorised, Settled, Refused, Refunded, Chargeback — so the raw file
+      double-counts every sale. Authorised is folded into the Settled row and survives only as
+      amount_local_authorised, which is what makes a partial capture visible. Timestamps are
+      converted from Europe/Amsterdam to UTC; amounts are signed, refunds and chargebacks negative.
+    columns:
+      - name: order_ref
+        description: Adyen's Merchant Reference. Joins to the engine log's order_id.
+        data_tests: [not_null]
+
+      - name: psp_reference
+        description: >-
+          Adyen's own reference, 1:1 with order_ref. Not a join key — the engine issues a fresh
+          reference for each refund and chargeback while Adyen reuses the original sale's.
+        data_tests: [not_null]
+
+      - name: operation_type
+        description: sale, refund or chargeback.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [sale, refund, chargeback]
+
+      - name: status
+        description: settled or declined. Declined is a Refused authorisation; no money moved.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [settled, declined]
+
+      - name: amount_local
+        description: Amount attempted, in gross currency. Signed — refunds and chargebacks negative.
+        data_tests: [not_null]
+
+      - name: amount_local_settled
+        description: >-
+          Money that actually moved. Equals amount_local except on a declined sale, where it is
+          zero. This is the column the reconciliation compares.
+        data_tests: [not_null]
+
+      - name: amount_local_authorised
+        description: >-
+          Gross on the Authorised row. Differs from amount_local only on a partial capture.
+          Null for declines, refunds and chargebacks.
+
+      - name: fee_local
+        description: >-
+          fee_commission_local + fee_markup_local. Adyen splits the contracted 2.5% across two
+          columns — commission carries 1.9%, markup the remainder — so neither is comparable to
+          fee_schedule alone. Zero on refunds and chargebacks: Adyen returns no fee.
+
+      - name: net_local
+        description: Amount less fees, as Adyen reports it. Ties to gross - commission - markup on every row.

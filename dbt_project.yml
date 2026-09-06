@@ -8,6 +8,9 @@ macro-paths: ["macros"]
 test-paths: ["tests"]
 clean-targets: ["target", "dbt_packages"]
 
+vars:
+  reporting_month: '2026-06-01'
+
 flags:
   send_anonymous_usage_stats: false
 

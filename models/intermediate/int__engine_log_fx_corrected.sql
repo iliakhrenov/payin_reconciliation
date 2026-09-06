@@ -29,13 +29,20 @@ booked as (
 expected as (
   select
     booked.*,
-    (
-      select max(rates.rate_date)
-      from rates
-      where rates.currency = booked.currency
-        and rates.rate_date <= cast(booked.created_at_utc as date)
-    ) as fx_date_expected
+    latest_rate.rate_date as fx_date_expected,
+    case
+      when booked.currency = 'USD' then 1.0
+      else latest_rate.usd_rate
+    end as fx_rate_expected
   from booked
+  left join lateral (
+    select rates.rate_date, rates.usd_rate
+    from rates
+    where rates.currency = booked.currency
+      and rates.rate_date <= cast(booked.created_at_utc as date)
+    order by rates.rate_date desc
+    limit 1
+  ) as latest_rate on true
 ),
 
 classified as (
@@ -68,12 +75,12 @@ final as (
     fx_date_applied,
     fx_rate_published,
     fx_date_expected,
+    fx_rate_expected,
     fx_variance_reason,
     amount_usd as amount_usd_engine,
     case
-      when fx_variance_reason in ('fx_not_applied', 'fx_rate_mismatch')
-        then cast(round(amount_local * fx_rate_published, 2) as decimal(18, 2))
-      else amount_usd
+      when fx_rate_expected is null then amount_usd
+      else cast(round(amount_local * fx_rate_expected, 2) as decimal(18, 2))
     end as amount_usd_recon,
     created_at_utc,
     captured_at_utc

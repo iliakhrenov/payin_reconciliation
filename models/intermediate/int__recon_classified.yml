@@ -1,0 +1,106 @@
+version: 2
+
+models:
+  - name: int__recon_classified
+    description: >-
+      The reconciliation, one row per transaction, carrying a root cause for each of the three
+      things being checked. They form a waterfall, each handing a clean number to the next:
+      engine_bugs restates what the backend mis-booked, gross compares the corrected backend
+      figure against the provider, net carries the provider's gross down to what it actually
+      paid after fees. Three counterparties, one grain — so they sit side by side on the row and
+      one order's whole story reads in one place. Period comes from the reporting_month var.
+    columns:
+      - name: bug_cause
+        description: >-
+          The backend's own booking fault, before any provider is involved.
+          engine_fx_not_applied: rate of 1.0 on a foreign currency, conversion skipped outright.
+          engine_fx_rate_mismatch: rate disagrees with the rate published for the day it chose.
+          engine_fx_date_stale: right rate, wrong day — priced against a stale publication.
+          engine_fx_rate_unpublished: booked against a date with no published rate.
+          Null where the engine never logged the transaction at all.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values:
+                  - matched
+                  - engine_fx_not_applied
+                  - engine_fx_rate_mismatch
+                  - engine_fx_date_stale
+                  - engine_fx_rate_unpublished
+                  - unexplained
+
+      - name: gross_cause
+        description: >-
+          psp_claims_* means the provider asserts something the backend does not.
+          engine_* means the backend's own booking is at fault.
+          psp_claims_chargeback / psp_claims_sale: provider has a transaction the engine never logged.
+          psp_claims_declined: engine booked a sale the provider refused.
+          psp_claims_partial_capture: provider settled less than it authorised; the engine booked the full amount.
+          psp_claims_captured_different_period: same transaction, settled either side of the month boundary.
+          FX faults never appear here — they are cleaned in engine_bugs first, so gross is a
+          comparison of two figures that both believe the same rate.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values:
+                  - matched
+                  - psp_claims_chargeback
+                  - psp_claims_sale
+                  - psp_claims_declined
+                  - psp_claims_partial_capture
+                  - psp_claims_captured_different_period
+                  - unexplained
+
+      - name: net_cause
+        description: >-
+          psp_fee_overcharge / psp_fee_undercharge: provider charged more or less than contracted.
+          fee_not_contracted: no rate on file for this provider and account, so the fee cannot be
+          checked — carried at zero dollars and visible as a row count, never as a false clean bill.
+          Null where no fee is due: reversals, declines, and transactions the provider never reported.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [matched, psp_fee_overcharge, psp_fee_undercharge, fee_not_contracted, unexplained]
+
+      - name: gross_status
+        description: matched, explained or unexplained. The three must sum to the gross gap.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [matched, explained, unexplained]
+
+      - name: net_status
+        description: matched, explained or unexplained. Null wherever net_cause is.
+
+      - name: bug_status
+        description: matched, explained or unexplained. Null wherever bug_cause is.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [matched, explained, unexplained]
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: [matched, explained, unexplained]
+
+      - name: bug_diff_usd
+        description: >-
+          Restated USD less what the backend booked, in the reporting period. Negative means the
+          backend's books overstated: the money was never there to begin with.
+        data_tests: [not_null]
+
+      - name: gross_diff_usd
+        description: >-
+          Provider USD less engine USD, counting each side only in the reporting period. A
+          transaction the engine books in June and the provider settles in July shows its full
+          value here — that timing is a real difference at month end.
+        data_tests: [not_null]
+
+      - name: net_diff_usd
+        description: >-
+          Contracted fee less the fee charged, in USD, counted only where the provider recognised
+          the sale in the period. Negative means the provider kept more than the contract allows —
+          the same direction as the other two, so all three are safe to add.
+        data_tests: [not_null]

@@ -44,8 +44,10 @@ location: `raw/`
 2. Every dollar of difference between the payment backend and the providers is either matched, explained with a cause, or explicitly listed as unexplained — and the three add up. (dbt test)
 3. The reconciliation summary format: numbers first, caveats and issues stated. Tone: concise, executive-facing, something that can be skimmed for essence quikly. Location: `docs/cfo_summary_<month>.md`.
 4. Data pre-processing (before it lands in dbt) must be documented. Location: `docs/pre_processing.md`
+5. Data profiling result for each file in a separate doc file: `docs/profiling__adyen.md` for example.
 
 ## Style
 - Keep SQL lowercase, 2 space indent
 - Code comments are a cheat-meal, not a regular diet. Place them only where it is absolutely essential for future-self.
 - Documentation: extremely concise, capture only essence, something that can be explained to business stakeholders.
+- When writing markdown, don't hold to a certain line length; long lines are allowed, let user's renderer to wrap them.

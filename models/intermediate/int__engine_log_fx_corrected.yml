@@ -23,13 +23,18 @@ models:
           Last rate date published on or before the transaction date — the date the engine
           should have priced against. Null for USD.
 
+      - name: fx_rate_expected
+        description: >-
+          Rate published on fx_date_expected. The reconciliation's pricing basis: every USD
+          figure on both sides of the comparison is struck at this rate.
+
       - name: fx_variance_reason
         description: >-
           fx_not_applied: rate of 1.0 on a foreign currency, conversion skipped outright.
           fx_rate_mismatch: rate disagrees with the published rate for its own date.
           fx_date_stale: correct rate, but priced against the wrong day.
-          Both rate faults are restated; a stale date is only flagged, since the providers
-          report local amounts and cannot adjudicate which day was right.
+          All four are restated: amount_usd_recon prices every row at the as-of rate, so the
+          reconciliation runs on one basis and the fault is reported as dollars, not a flag.
         data_tests:
           - not_null
           - accepted_values:
@@ -42,8 +47,9 @@ models:
 
       - name: amount_usd_recon
         description: >-
-          USD after restating rate faults. Equals amount_usd_engine wherever the engine was
-          right. dLocal independently reports the restated figure for all four corrected rows.
+          The local amount at fx_rate_expected, on every row — one rule, no carve-outs. Equals
+          amount_usd_engine wherever the engine priced correctly, which is 7,982 of 7,988 rows.
+          dLocal independently reports this figure for all four evidence-backed corrections.
         data_tests: [not_null]
 
       - name: fx_correction_usd

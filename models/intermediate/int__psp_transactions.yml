@@ -1,0 +1,36 @@
+version: 2
+
+models:
+  - name: int__psp_transactions
+    description: >-
+      Every provider export in one shape, priced in USD. This is the seam: adding a provider is
+      a staging model and a union branch here, and nothing downstream changes. USD uses the last
+      published rate on or before the transaction date — the same as-of rule the engine is held
+      to — so a matched row shows no FX noise and a genuine engine FX fault shows through.
+      The contracted rate is attached here too: it is a property of the provider and account, and
+      the fee population is a subset of this grain, so it needs no join of its own downstream.
+      Grain: one row per psp x order_ref x operation_type.
+    columns:
+      - name: psp
+        description: Provider. Currently adyen only.
+        data_tests: [not_null]
+
+      - name: fx_rate_recon
+        description: Published rate used to state this row in USD. 1.0 for USD, which is not published.
+        data_tests: [not_null]
+
+      - name: amount_usd_settled
+        description: Money that moved, in USD at fx_rate_recon. Signed.
+        data_tests: [not_null]
+
+      - name: fee_local_contracted
+        description: >-
+          What the contract allows the provider to charge on this sale, at the rate in force on
+          the transaction date. Null on reversals and declines, where no fee is due, and null
+          where no contract is on file — the two are told apart downstream by fee_cause.
+
+      - name: recognised_at_utc
+        description: >-
+          When the provider recognised the transaction — settlement time where there is one,
+          otherwise the attempt. Drives which reporting period the row falls in.
+        data_tests: [not_null]

@@ -1,0 +1,23 @@
+version: 2
+
+models:
+  - name: mart__recon_summary
+    description: >-
+      Provider x scope x cause: rows, absolute USD, signed USD, and each cause's share of that
+      provider's discrepancy within its scope. In-period only. The deliverable behind cfo_summary,
+      which reads it as two sections - gross reconciliation, then fees.
+    columns:
+      - name: psp
+        data_tests: [not_null]
+      - name: recon_scope
+        description: gross (provider vs engine) or fees (provider vs contract). Shares are struck within a scope, never across.
+        data_tests: [not_null]
+      - name: recon_cause
+        data_tests: [not_null]
+      - name: signed_usd
+        description: >-
+          Impact on net USD receipts. Negative means the backend's books overstate what we keep -
+          true in both scopes, so gross and fees can be added for a total.
+        data_tests: [not_null]
+      - name: pct_of_discrepancy
+        description: Share of the provider's absolute discrepancy within its scope. Matched rows are 0 by construction.
