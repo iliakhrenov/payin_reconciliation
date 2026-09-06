@@ -35,3 +35,10 @@ The 2 exceptions are real anomalies worth carrying into the reconciliation:
 - **new: ORD-507807 refund is under-booked.** The engine books BRL 59.97 against dLocal's BRL 99.95 — exactly 30% of the sale where dLocal refunded 50%. dLocal moved the money; the engine understates the refund by BRL 39.98 ($7.36).
 - **unresolved, likely provider-side: ORD-507812.** Engine has a settled CLP 6,990 sale ($7.42) with psp_reference DL-90001317. dLocal transaction ids run dense 90000001–90001319 across both sides and DL-90001317 is the only id missing from the export, so the id was minted — this reads as an export omission, not an engine invention. Needs dLocal to confirm.
 
+
+8. Google Play profiling — no engine defects found, two structural gaps worth naming:
+
+- **`psp_reference` is null on all 820 Google Play rows.** The only PSP with no provider reference at all. The reconciliation works because `captured_at_utc` happens to be an exact key (820/820), but that is a coincidence of the data, not a designed identifier — two purchases at the same second with the same SKU and country would be unresolvable. The engine should persist Google's purchase token or order id.
+- **The engine records no declined Google Play attempts and no chargebacks.** Every other PSP runs 7–8% declines. The backend is not initiating these purchases; it is ingesting Google's notifications, so the engine log is a copy of the provider feed rather than an independent record. The June tie of $0.00 should be read accordingly.
+
+Provider-side finding, needs Google: **six transactions billed at 30% against a contracted 15%**, all on 2026-06-17 between 02:21 and 07:30 LA, all US / USD / `sub_monthly` / $9.99, fee $3.00 where $1.50 was due. $9.00 overcharge. Charges either side of the window are billed correctly.

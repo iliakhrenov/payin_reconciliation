@@ -1,0 +1,70 @@
+version: 2
+
+models:
+  - name: stg__payment_log_google_play
+    description: >-
+      Google Play earnings, one row per transaction. The two monthly files are one ledger and are
+      unioned here: the June file is cut on America/Los_Angeles dates and already contains a sale
+      that is July in UTC. The raw file is a ledger, not a transaction list — every sale ships as
+      a Charge row plus a same-timestamp Google fee row, and the fee row is folded into its charge
+      rather than counted as a second event. Refunds stand alone and carry no fee. There are no
+      declined attempts: Google publishes only money that moved. The export has no order reference
+      of any kind, so match_key carries the timestamp the reconciliation joins on.
+    columns:
+      - name: match_key
+        description: >-
+          The join key, since the file publishes no identifier. LA-local timestamp converted to
+          UTC, plus SKU and country to separate the one second that carries two sales. Matches the
+          engine's captured_at_utc exactly on every row.
+        data_tests: [not_null, unique]
+
+      - name: order_ref
+        description: >-
+          Always null. Google publishes no order id or purchase token, and the engine's
+          psp_reference is null on every Google Play row. The reported order reference comes from
+          the engine side of the join.
+
+      - name: psp_account
+        description: >-
+          LumoPlayMain, from the report preamble that pre-processing strips. Fixed here because it
+          is the key the fee schedule is contracted against.
+        data_tests: [not_null]
+
+      - name: operation_type
+        description: sale or refund. Google reports no declines and no chargebacks.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [sale, refund]
+
+      - name: status
+        description: Always settled. An earnings report lists money that moved and nothing else.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [settled]
+
+      - name: amount_local
+        description: Buyer-currency amount, signed as the file ships it — refunds already negative.
+        data_tests: [not_null]
+
+      - name: fee_local
+        description: >-
+          The sibling Google fee row, sign-flipped to a positive cost. Null on refunds, which
+          return no fee.
+
+      - name: fee_usd_native
+        description: >-
+          Google's own USD fee, taken as reported. Google derives it from the USD gross rather
+          than by converting the local fee, and recomputing disagrees by a cent on 59 rows.
+
+      - name: created_at_utc
+        description: >-
+          The single timestamp the file publishes, converted from America/Los_Angeles. It is the
+          settlement instant; the engine's authorisation time appears nowhere in the export.
+        data_tests: [not_null]
+
+      - name: net_local
+        description: Always null. Google reports no net column.

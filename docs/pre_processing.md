@@ -45,4 +45,6 @@ Pre-processing makes the bytes readable, nothing more. These are interpretation,
 
 PayPal EU decimal commas and mixed date formats · dLocal minor units, inverted FX direction and one duplicated export line · timezone alignment (Adyen Europe/Amsterdam, Google Play America/Los_Angeles → UTC) · provider status vocabularies.
 
+**The two Google Play files are one ledger.** Staging unions `202606` and `202607_partial` before anything is counted — the June file is cut on LA-local dates and already contains a transaction that is July in UTC. Either file read alone gives a wrong June.
+
 Profiling a provider export before staging it follows the `profile-psp-export` skill (`.claude/skills/`); results land in `docs/profiling__<psp>.md`.

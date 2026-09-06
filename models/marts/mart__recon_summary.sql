@@ -62,8 +62,10 @@ final as (
     cast(abs_usd as decimal(18, 2)) as abs_usd,
     cast(signed_usd as decimal(18, 2)) as signed_usd,
     cast(
-      round(100.0 * abs_usd / nullif(sum(abs_usd) over (partition by psp, recon_scope), 0), 2)
-      as decimal(6, 2)
+      coalesce(
+        round(100.0 * abs_usd / nullif(sum(abs_usd) over (partition by psp, recon_scope), 0), 2),
+        0
+      ) as decimal(6, 2)
     ) as pct_of_discrepancy
   from by_cause
 )

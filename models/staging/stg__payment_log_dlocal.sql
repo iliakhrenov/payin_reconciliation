@@ -61,6 +61,7 @@ final as (
     cast(null as varchar) as psp_account,
     psp_reference,
     order_ref,
+    order_ref as match_key,
     operation_type,
     status,
     currency,

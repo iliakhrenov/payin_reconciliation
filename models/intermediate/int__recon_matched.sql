@@ -8,6 +8,11 @@ engine as (
   select
     txn_id,
     order_id,
+    case psp
+      when 'google_play'
+        then strftime(captured_at_utc, '%Y-%m-%dT%H:%M:%S') || '|' || sku || '|' || country
+      else order_id
+    end as match_key,
     psp,
     psp_reference,
     lower(operation_type) as operation_type,
@@ -47,6 +52,7 @@ joined as (
   select
     coalesce(engine.psp, psp.psp) as psp,
     coalesce(engine.order_id, psp.order_ref) as order_ref,
+    coalesce(engine.match_key, psp.match_key) as match_key,
     coalesce(engine.operation_type, psp.operation_type) as operation_type,
 
     engine.txn_id,
@@ -84,11 +90,11 @@ joined as (
     psp.batch_number,
 
     engine.txn_id is not null as in_engine,
-    psp.order_ref is not null as in_psp
+    psp.match_key is not null as in_psp
   from engine
   full outer join psp
     on psp.psp = engine.psp
-   and psp.order_ref = engine.order_id
+   and psp.match_key = engine.match_key
    and psp.operation_type = engine.operation_type
 ),
 

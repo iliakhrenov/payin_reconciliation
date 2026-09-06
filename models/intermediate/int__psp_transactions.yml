@@ -9,10 +9,10 @@ models:
       to — so a matched row shows no FX noise and a genuine engine FX fault shows through.
       The contracted rate is attached here too: it is a property of the provider and account, and
       the fee population is a subset of this grain, so it needs no join of its own downstream.
-      Grain: one row per psp x order_ref x operation_type.
+      Grain: one row per psp x match_key x operation_type.
     columns:
       - name: psp
-        description: Provider. adyen and dlocal.
+        description: Provider. adyen, dlocal and google_play.
         data_tests: [not_null]
 
       - name: fee_usd

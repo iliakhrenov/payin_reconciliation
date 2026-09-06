@@ -10,7 +10,7 @@ models:
       provider side already priced at the same published rate, so the two amount columns are
       directly comparable and every difference here is about the transaction, never the rate.
       Nothing is classified at this layer; int__recon_classified does that. Grain: one row per
-      psp x order_ref x operation_type, enforced by assert_recon_grain.
+      psp x match_key x operation_type, enforced by assert_recon_grain.
     columns:
       - name: psp
         description: Provider, from whichever side has the row.
@@ -18,9 +18,17 @@ models:
 
       - name: order_ref
         description: >-
-          The order reference both sides agree on — the engine's order_id, the provider's own
-          merchant or invoice reference. The join key. Not the PSP reference: providers differ on
-          whether a refund reuses the original sale's reference or gets a fresh one.
+          The order reference for reporting — the engine's order_id, or the provider's own
+          merchant or invoice reference where the engine has no row. Not the PSP reference:
+          providers differ on whether a refund reuses the original sale's reference or gets a
+          fresh one. Not the join key either; see match_key.
+        data_tests: [not_null]
+
+      - name: match_key
+        description: >-
+          What the two sides are actually joined on. The order reference for providers that
+          publish one, the UTC timestamp plus SKU and country for Google Play, which publishes
+          no identifier at all. Each side derives it from its own columns.
         data_tests: [not_null]
 
       - name: operation_type

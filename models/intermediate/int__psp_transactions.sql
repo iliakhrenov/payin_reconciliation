@@ -4,6 +4,8 @@ providers as (
   select * from {{ ref('stg__payment_log_adyen') }}
   union all by name
   select * from {{ ref('stg__payment_log_dlocal') }}
+  union all by name
+  select * from {{ ref('stg__payment_log_google_play') }}
 ),
 
 contracts as (
@@ -76,6 +78,7 @@ final as (
     psp_account,
     psp_reference,
     order_ref,
+    match_key,
     operation_type,
     status,
     currency,
@@ -100,7 +103,12 @@ final as (
       fee_usd_native,
       cast(round(fee_local * fx_rate_recon, 2) as decimal(18, 2))
     ) as fee_usd,
-    cast(round(fee_local_contracted * fx_rate_recon, 2) as decimal(18, 2)) as fee_usd_contracted,
+    case
+      when fee_local_contracted is null then null
+      when fee_usd_native is not null
+        then cast(round(amount_usd_settled * percent_fee / 100, 2) as decimal(18, 2))
+      else cast(round(fee_local_contracted * fx_rate_recon, 2) as decimal(18, 2))
+    end as fee_usd_contracted,
     created_at_utc,
     settled_at_utc,
     coalesce(settled_at_utc, created_at_utc) as recognised_at_utc,

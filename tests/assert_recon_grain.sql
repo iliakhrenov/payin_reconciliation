@@ -1,7 +1,7 @@
 -- The reconciliation spine is one row per provider transaction. Any fan-out is a broken join.
 select
   psp,
-  order_ref,
+  match_key,
   operation_type,
   count(*) as n_rows
 from {{ ref('int__recon_matched') }}
