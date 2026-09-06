@@ -1,0 +1,95 @@
+version: 2
+
+models:
+  - name: stg__payment_engine_log
+    description: >-
+      Payment backend log, one row per transaction attempt across all five providers.
+      Internal source of truth for the reconciliation. Typed and case-normalized only —
+      no filtering, no sign convention, no FX validation.
+    columns:
+      - name: txn_id
+        description: Transaction attempt. Primary key.
+        data_tests: [unique, not_null]
+
+      - name: order_id
+        description: >-
+          Order the transaction belongs to. Repeats when an order is later refunded or
+          charged back — at most two rows per order.
+        data_tests: [not_null]
+
+      - name: operation_type
+        description: Direction of the money movement. Lowercased at source.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [sale, refund, chargeback]
+
+      - name: status
+        description: Outcome of the attempt. Only settled rows move money.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [settled, declined, pending]
+
+      - name: psp
+        description: Payment provider the attempt was routed to.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [adyen, dlocal, google_play, paypal_eu, paypal_us]
+
+      - name: psp_reference
+        description: >-
+          Provider-side transaction id — the join key to the provider exports.
+          Null for google_play, which returns none; populated for every other provider.
+        data_tests: [unique]
+
+      - name: sku
+        description: Product sold.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [sub_monthly, sub_quarterly, sub_annual, coach_addon]
+
+      - name: country
+        description: Billing country, ISO 3166-1 alpha-2.
+        data_tests: [not_null]
+
+      - name: currency
+        description: Currency the customer was charged in, ISO 4217.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [USD, EUR, GBP, BRL, MXN, ARS, CLP, COP]
+
+      - name: amount_local
+        description: Gross amount in currency. Always positive, including refunds.
+        data_tests: [not_null]
+
+      - name: fx_rate_applied
+        description: USD per 1 unit of currency, as booked by the engine.
+        data_tests: [not_null]
+
+      - name: fx_date_applied
+        description: >-
+          Rate date the engine booked against. Not the transaction date — the engine
+          uses the last business day published in fx_rates on or before it.
+        data_tests: [not_null]
+
+      - name: amount_usd
+        description: amount_local converted at fx_rate_applied, rounded to cents.
+        data_tests: [not_null]
+
+      - name: created_at_utc
+        description: When the engine initiated the attempt.
+        data_tests: [not_null]
+
+      - name: captured_at_utc
+        description: >-
+          When the provider confirmed the money. Null for declined and pending
+          attempts, populated for every settled one.

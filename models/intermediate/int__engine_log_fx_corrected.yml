@@ -1,0 +1,51 @@
+version: 2
+
+models:
+  - name: int__engine_log_fx_corrected
+    description: >-
+      Engine log with its USD conversion checked against the published FX rate and, where
+      the engine got the rate wrong, restated. Grain is unchanged — one row per txn_id.
+      amount_usd_engine is what the backend booked and is never altered; amount_usd_recon
+      is what it should have been. Their difference is the FX share of the discrepancy and
+      must stay visible, so downstream reads both.
+    columns:
+      - name: txn_id
+        description: Transaction attempt. Primary key, unchanged from staging.
+        data_tests: [unique, not_null]
+
+      - name: fx_rate_published
+        description: >-
+          Rate in force for the currency on fx_date_applied. 1.0 for USD, which is not
+          published. Null only if the engine booked against an unpublished date.
+
+      - name: fx_date_expected
+        description: >-
+          Last rate date published on or before the transaction date — the date the engine
+          should have priced against. Null for USD.
+
+      - name: fx_variance_reason
+        description: >-
+          fx_not_applied: rate of 1.0 on a foreign currency, conversion skipped outright.
+          fx_rate_mismatch: rate disagrees with the published rate for its own date.
+          fx_date_stale: correct rate, but priced against the wrong day.
+          Both rate faults are restated; a stale date is only flagged, since the providers
+          report local amounts and cannot adjudicate which day was right.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [none, fx_not_applied, fx_rate_mismatch, fx_date_stale, fx_rate_unpublished]
+
+      - name: amount_usd_engine
+        description: USD as booked by the backend. Preserved as-is — this is the claim under audit.
+        data_tests: [not_null]
+
+      - name: amount_usd_recon
+        description: >-
+          USD after restating rate faults. Equals amount_usd_engine wherever the engine was
+          right. dLocal independently reports the restated figure for all four corrected rows.
+        data_tests: [not_null]
+
+      - name: fx_correction_usd
+        description: amount_usd_engine - amount_usd_recon. Positive means the engine overstated.
+        data_tests: [not_null]

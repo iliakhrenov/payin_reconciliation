@@ -1,0 +1,41 @@
+version: 2
+
+models:
+  - name: stg__fx_rates
+    description: >-
+      Daily FX rates to USD, business days only. USD itself is not published — treat it
+      as 1.0 downstream. A rate may be republished to correct a bad one: every version is
+      kept and ranked, so grain is one row per rate_date x currency x rate_version.
+      Consumers pin is_current_rate — a republication supersedes, it does not coexist.
+    columns:
+      - name: rate_date
+        description: Business day the rate applies to.
+        data_tests: [not_null]
+
+      - name: currency
+        description: Currency the rate converts from, ISO 4217.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [EUR, GBP, BRL, MXN, ARS, CLP, COP]
+
+      - name: usd_rate
+        description: USD per 1 unit of currency.
+        data_tests: [not_null]
+
+      - name: published_at
+        description: When the rate was released. Later than rate_date on a republication.
+        data_tests: [not_null]
+
+      - name: rate_version
+        description: >-
+          1 = first published, 2+ = corrections, ordered by published_at. Only 2026-06-10
+          BRL carries a version 2 here: 0.185352 was wrong and 0.190542 replaced it.
+        data_tests: [not_null]
+
+      - name: is_current_rate
+        description: >-
+          The rate in force for the day. dLocal priced every 2026-06-10 BRL transaction at
+          the corrected rate, which is what makes the correction authoritative, not the original.
+        data_tests: [not_null]
