@@ -1,0 +1,51 @@
+reporting_month,psp,recon_scope,recon_status,recon_cause,n_rows,abs_usd,signed_usd,base_label,base_usd,pct_of_base,pct_of_scope_discrepancy,pct_of_total_discrepancy
+2026-06-01,adyen,backend_fx,explained,engine_fx_date_stale,1,0.03,0.03,backend booked gross,32912.09,0.0001,100.00,0.00
+2026-06-01,adyen,backend_fx,matched,matched,1735,0.00,0.00,backend booked gross,32912.09,0.0000,0.00,0.00
+2026-06-01,adyen,backend_fx,unexplained,unexplained,0,0.00,0.00,backend booked gross,32912.09,0.0000,0.00,0.00
+2026-06-01,adyen,fees,explained,psp_fee_overcharge,2,1.72,-1.72,provider fees charged,829.42,0.2074,100.00,0.00
+2026-06-01,adyen,fees,matched,matched,1574,0.00,0.00,provider fees charged,829.42,0.0000,0.00,0.00
+2026-06-01,adyen,fees,unexplained,unexplained,0,0.00,0.00,provider fees charged,829.42,0.0000,0.00,0.00
+2026-06-01,adyen,gross,explained,psp_claims_chargeback,1,64.79,-64.79,provider gross,32796.14,0.1976,47.05,0.03
+2026-06-01,adyen,gross,explained,psp_claims_partial_capture,2,40.36,-40.36,provider gross,32796.14,0.1231,29.31,0.02
+2026-06-01,adyen,gross,explained,psp_claims_declined,1,10.90,-10.90,provider gross,32796.14,0.0332,7.92,0.01
+2026-06-01,adyen,gross,explained,psp_claims_sale,1,10.86,10.86,provider gross,32796.14,0.0331,7.89,0.01
+2026-06-01,adyen,gross,explained,psp_claims_captured_different_period,1,10.79,-10.79,provider gross,32796.14,0.0329,7.84,0.01
+2026-06-01,adyen,gross,matched,matched,1732,0.00,0.00,provider gross,32796.14,0.0000,0.00,0.00
+2026-06-01,adyen,gross,unexplained,unexplained,0,0.00,0.00,provider gross,32796.14,0.0000,0.00,0.00
+2026-06-01,dlocal,backend_fx,explained,engine_fx_not_applied,3,200679.44,-200679.44,backend booked gross,215642.53,93.0612,100.00,97.62
+2026-06-01,dlocal,backend_fx,explained,engine_fx_rate_mismatch,1,0.47,0.47,backend booked gross,215642.53,0.0002,0.00,0.00
+2026-06-01,dlocal,backend_fx,matched,matched,1275,0.00,0.00,backend booked gross,215642.53,0.0000,0.00,0.00
+2026-06-01,dlocal,backend_fx,unexplained,unexplained,0,0.00,0.00,backend booked gross,215642.53,0.0000,0.00,0.00
+2026-06-01,dlocal,fees,explained,psp_claims_fee_out_of_contract,1150,682.56,-682.56,provider fees charged,751.25,90.8566,100.00,0.33
+2026-06-01,dlocal,fees,unexplained,unexplained,0,0.00,0.00,provider fees charged,751.25,0.0000,0.00,0.00
+2026-06-01,dlocal,gross,explained,engine_claims_sale,1,7.42,-7.42,provider gross,14949.45,0.0496,26.15,0.00
+2026-06-01,dlocal,gross,explained,psp_claims_different_amount,1,7.36,-7.36,provider gross,14949.45,0.0492,25.94,0.00
+2026-06-01,dlocal,gross,explained,psp_claims_duplicate_row,1,7.13,7.13,provider gross,14949.45,0.0477,25.13,0.00
+2026-06-01,dlocal,gross,explained,psp_claims_disputed,1,6.45,-6.45,provider gross,14949.45,0.0431,22.74,0.00
+2026-06-01,dlocal,gross,explained,psp_fx_date_basis,1,0.01,-0.01,provider gross,14949.45,0.0001,0.04,0.00
+2026-06-01,dlocal,gross,matched,matched,1274,0.00,0.00,provider gross,14949.45,0.0000,0.00,0.00
+2026-06-01,dlocal,gross,unexplained,unexplained,0,0.00,0.00,provider gross,14949.45,0.0000,0.00,0.00
+2026-06-01,google_play,backend_fx,matched,matched,776,0.00,0.00,backend booked gross,14744.63,0.0000,0.00,0.00
+2026-06-01,google_play,backend_fx,unexplained,unexplained,0,0.00,0.00,backend booked gross,14744.63,0.0000,0.00,0.00
+2026-06-01,google_play,fees,explained,psp_fee_overcharge,6,9.00,-9.00,provider fees charged,2249.20,0.4001,100.00,0.00
+2026-06-01,google_play,fees,matched,matched,760,0.00,0.00,provider fees charged,2249.20,0.0000,0.00,0.00
+2026-06-01,google_play,fees,unexplained,unexplained,0,0.00,0.00,provider fees charged,2249.20,0.0000,0.00,0.00
+2026-06-01,google_play,gross,matched,matched,776,0.00,0.00,provider gross,14744.63,0.0000,0.00,0.00
+2026-06-01,google_play,gross,unexplained,unexplained,0,0.00,0.00,provider gross,14744.63,0.0000,0.00,0.00
+2026-06-01,paypal_eu,backend_fx,explained,engine_fx_date_stale,1,0.56,-0.56,backend booked gross,36323.01,0.0015,100.00,0.00
+2026-06-01,paypal_eu,backend_fx,matched,matched,1830,0.00,0.00,backend booked gross,36323.01,0.0000,0.00,0.00
+2026-06-01,paypal_eu,backend_fx,unexplained,unexplained,0,0.00,0.00,backend booked gross,36323.01,0.0000,0.00,0.00
+2026-06-01,paypal_eu,fees,explained,psp_claims_fee_out_of_contract,1660,1700.50,-1700.50,provider fees charged,1700.50,100.0000,100.00,0.83
+2026-06-01,paypal_eu,fees,unexplained,unexplained,0,0.00,0.00,provider fees charged,1700.50,0.0000,0.00,0.00
+2026-06-01,paypal_eu,gross,explained,psp_claims_chargeback,1,65.36,-65.36,provider gross,36230.10,0.1804,70.77,0.03
+2026-06-01,paypal_eu,gross,explained,psp_claims_refund,1,26.99,-26.99,provider gross,36230.10,0.0745,29.23,0.01
+2026-06-01,paypal_eu,gross,matched,matched,1831,0.00,0.00,provider gross,36230.10,0.0000,0.00,0.00
+2026-06-01,paypal_eu,gross,unexplained,unexplained,0,0.00,0.00,provider gross,36230.10,0.0000,0.00,0.00
+2026-06-01,paypal_us,backend_fx,matched,matched,2091,0.00,0.00,backend booked gross,36046.31,0.0000,0.00,0.00
+2026-06-01,paypal_us,backend_fx,unexplained,unexplained,0,0.00,0.00,backend booked gross,36046.31,0.0000,0.00,0.00
+2026-06-01,paypal_us,fees,explained,psp_claims_fee_out_of_contract,1894,2208.46,-2208.46,provider fees charged,2208.46,100.0000,100.00,1.07
+2026-06-01,paypal_us,fees,unexplained,unexplained,0,0.00,0.00,provider fees charged,2208.46,0.0000,0.00,0.00
+2026-06-01,paypal_us,gross,explained,engine_capture_not_recorded,1,24.99,24.99,provider gross,36081.29,0.0693,71.44,0.01
+2026-06-01,paypal_us,gross,explained,psp_claims_duplicate_row,1,9.99,9.99,provider gross,36081.29,0.0277,28.56,0.00
+2026-06-01,paypal_us,gross,matched,matched,2089,0.00,0.00,provider gross,36081.29,0.0000,0.00,0.00
+2026-06-01,paypal_us,gross,unexplained,unexplained,0,0.00,0.00,provider gross,36081.29,0.0000,0.00,0.00

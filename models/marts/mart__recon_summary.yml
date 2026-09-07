@@ -3,21 +3,66 @@ version: 2
 models:
   - name: mart__recon_summary
     description: >-
-      Provider x scope x cause: rows, absolute USD, signed USD, and each cause's share of that
-      provider's discrepancy within its scope. In-period only. The deliverable behind cfo_summary,
-      which reads it as two sections - gross reconciliation, then fees.
+      The reconciliation deliverable, at provider x scope x cause. In-period only. Written to
+      exports/recon_summary_<month>.csv by a post-hook so the file can never drift from the model.
+
+      Three scopes, three different counterparties: backend_fx is the backend against itself,
+      gross is the backend against the provider, fees is the provider against the contract. Shares
+      are struck within a scope; the scopes never net against each other.
+
+      Every row carries the base it should be judged against, so a reader can tell a rounding cent
+      from a number the business will feel without leaving the file.
     columns:
+      - name: reporting_month
+        description: Period the summary covers. Present so the CSV is self-describing once it leaves the repo.
+        data_tests: [not_null]
       - name: psp
         data_tests: [not_null]
       - name: recon_scope
-        description: gross (provider vs engine) or fees (provider vs contract). Shares are struck within a scope, never across.
-        data_tests: [not_null]
+        description: backend_fx (backend's own FX faults), gross (provider vs backend), or fees (provider vs contract).
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [backend_fx, gross, fees]
+      - name: recon_status
+        description: matched, explained or unexplained. The three add up to the scope's control total.
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [matched, explained, unexplained]
       - name: recon_cause
+        data_tests: [not_null]
+      - name: n_rows
+        description: Transactions for gross and backend_fx; settled sales for fees. Zero on a stated nil residual.
+        data_tests: [not_null]
+      - name: abs_usd
+        description: Absolute USD impact. The magnitude of the break, regardless of direction.
         data_tests: [not_null]
       - name: signed_usd
         description: >-
           Impact on net USD receipts. Negative means the backend's books overstate what we keep -
-          true in both scopes, so gross and fees can be added for a total.
+          true in all three scopes, so they can be added for a total.
         data_tests: [not_null]
-      - name: pct_of_discrepancy
-        description: Share of the provider's absolute discrepancy within its scope. Matched rows are 0 by construction.
+      - name: base_label
+        description: Names what base_usd is, so the rate is not read against the wrong denominator.
+        data_tests: [not_null]
+      - name: base_usd
+        description: >-
+          The provider's whole book for this scope - backend booked gross, provider gross, or
+          provider fees charged. Deliberately broader than the rows that broke: a $9 fee variance
+          means nothing until you know it sits in a $2,249 fee bill.
+        data_tests: [not_null]
+      - name: pct_of_base
+        description: >-
+          abs_usd as a percentage of base_usd. The materiality read - is this a drop in the ocean
+          or something the business will feel. Four decimals so a rounding cent does not collapse to zero.
+        data_tests: [not_null]
+      - name: pct_of_scope_discrepancy
+        description: Share of this provider's absolute discrepancy within this scope. Answers "what drives Adyen's gross variance".
+        data_tests: [not_null]
+      - name: pct_of_total_discrepancy
+        description: >-
+          Share of the entire reconciliation's absolute discrepancy, across every provider and
+          scope. The required "share of the total discrepancy" - and the column that stops five
+          unrelated causes all reading as 100%.
+        data_tests: [not_null]

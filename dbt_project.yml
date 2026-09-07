@@ -15,6 +15,9 @@ vars:
   export_window_start: '2026-06-01'
   export_window_end: '2026-07-03'
 
+  # Where the reconciliation summary is written as a CSV deliverable, by the mart's post-hook.
+  export_dir: 'exports'
+
 flags:
   send_anonymous_usage_stats: false
 

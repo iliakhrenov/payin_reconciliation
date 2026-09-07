@@ -6,10 +6,10 @@ classified as (
   select * from {{ ref('int__recon_classified') }}
 ),
 
-engine_bugs as (
+backend_fx as (
   select
     psp,
-    'engine_bugs' as recon_scope,
+    'backend_fx' as recon_scope,
     sum(case when bug_status = 'matched' then bug_diff_usd else 0 end) as matched_usd,
     sum(case when bug_status = 'explained' then bug_diff_usd else 0 end) as explained_usd,
     sum(case when bug_status = 'unexplained' then bug_diff_usd else 0 end) as unexplained_usd,
@@ -34,10 +34,10 @@ gross as (
   group by 1
 ),
 
-net as (
+fees as (
   select
     psp,
-    'net' as recon_scope,
+    'fees' as recon_scope,
     sum(case when net_status = 'matched' then net_diff_usd else 0 end) as matched_usd,
     sum(case when net_status = 'explained' then net_diff_usd else 0 end) as explained_usd,
     sum(case when net_status = 'unexplained' then net_diff_usd else 0 end) as unexplained_usd,
@@ -49,11 +49,11 @@ net as (
 ),
 
 buckets as (
-  select * from engine_bugs
+  select * from backend_fx
   union all
   select * from gross
   union all
-  select * from net
+  select * from fees
 )
 
 select *
