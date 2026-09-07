@@ -49,6 +49,20 @@ discrepancy — the number the reconciliation exists to report — so it has to 
 
 **The reconciliation is a waterfall, not three separate exercises.** What the backend booked, plus its own bugs, plus the provider variance, equals what the provider says it took — then fees carry that down to net. Each section hands a clean number to the next, which is why FX faults are settled in the first one: a gross comparison is only meaningful once both sides believe the same rate. A test fails the build if the identity stops holding.
 
+## Adyen
+
+**Only `Settled` rows carry money.** Adyen emits two rows per transaction — `Authorised` then `Settled` — and gross is identical on 1,617 of 1,619. Summing both double-counts June. `Settled` is the row with the fees, the settlement timestamp that matches the engine's `captured_at_utc`, and the money that actually moved. `Refused` never settled and is not a discrepancy; it is counted, never added. A test fails the build if an `Authorised` row reaches a sum.
+
+**The join is `Merchant Reference` plus operation, not `Psp Reference`.** The engine mints a fresh reference for each of the 37 refunds and chargebacks while Adyen reuses the original sale's, so a PSP-reference join collapses every reversal onto its sale. This is the case that set the framework's key for every provider.
+
+**The contracted fee is `Commission + Markup`, never `Commission` alone.** The contract says 2.5%; Adyen reports it split — `Commission` at 1.9% of gross and `Markup` as the remainder to 2.5%. Checking `Commission` against the contract fails on all 1,619 settled rows and would report the entire book as undercharged by 0.6%. Summed, the formula is exact on 1,617 of 1,619, and `Net Credit` ties with zero residual.
+
+**A partial capture is priced on what was captured.** ORD-507793 authorises GBP 21.99 and settles GBP 11.00; Adyen charges its 2.5% on the 11.00. That is correct behaviour, and it is why June's GBP effective rate reads 2.480% rather than 2.500% — the apparent 0.02pp shortfall is the partial capture already counted in the gross scope, not a fee variance. Booking it twice was the trap.
+
+**`Batch Number` is not a period filter.** Batches run Mon–Sun (23–27 across the export) and batch 27 straddles the month end — it authorises ORD-507794 in June and settles it in July. The period is decided by the UTC settle date, like every other provider.
+
+**`Creation Date` is Europe/Amsterdam, and converting it verifies.** UTC+2 in June. Converted, `Authorised` equals the engine's `created_at_utc` on all 1,618 joinable sales and `Settled` equals `captured_at_utc` on 1,617 — the one miss being the July settlement above. Taken unconverted, nothing matches.
+
 ## dLocal
 
 **`local_amount` is minor units, scaled by the row's own `currency_exponent`.** CLP carries exponent 0 and the other four currencies carry 2, so a blanket ÷100 is wrong in both directions. Scaled per row, 1,318 of 1,319 rows tie to the engine's local amount exactly — the engine adjudicates the rule.

@@ -1,3 +1,11 @@
+# Data quality — working log
+
+Findings in the order they were discovered, with the evidence that settled each one. Items opened here are closed here (item 5 is closed inside item 9), so this reads as a trail, not a register.
+
+**For the register — what needs acting on, by whom, ranked by dollars — see [`action_items.md`](action_items.md).** This file is why we believe each item; that one is what to do about it.
+
+---
+
 1. stale fx rates
 The 2 exceptions are real anomalies worth carrying into the reconciliation:
 
