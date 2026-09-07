@@ -6,6 +6,8 @@ providers as (
   select * from {{ ref('stg__payment_log_dlocal') }}
   union all by name
   select * from {{ ref('stg__payment_log_google_play') }}
+  union all by name
+  select * from {{ ref('stg__payment_log_paypal') }}
 ),
 
 contracts as (

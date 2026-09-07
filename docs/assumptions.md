@@ -82,3 +82,35 @@ discrepancy — the number the reconciliation exists to report — so it has to 
 **The reconciliation key is `match_key`, not the order reference.** Google Play publishes no identifier at all, so the framework's spine generalises: every provider staging model emits a `match_key` it derives from its own columns — the order reference where one exists, the UTC timestamp plus SKU and country for Google Play — and the engine side derives the same key from its own. Neither side reads the other's columns, so the two remain independent. The full outer join and the grain test move to that key.
 
 **The contracted fee is stated in USD the way the provider states its own.** Where a provider reports a native USD fee, the contracted comparison is struck on the USD gross (`round(amount_usd × pct, 2)`); otherwise the local contracted fee is converted. Google derives its USD fee from the USD gross, so converting our local contracted fee instead left a cent of variance on 59 rows — $0.57 of fee discrepancy that no provider had actually charged. The cause classification was always struck in local currency and was right throughout; only the dollar figure was wrong. Adyen and dLocal are unaffected.
+
+## PayPal
+
+**The two files are one PSP with two accounts.** They share every column and differ only in dialect — delimiter, encoding, decimal separator, date order. Staging normalises both into one model with `psp_account` in ('paypal_us', 'paypal_eu'); the reconciliation matches on account, and no transaction id crosses between them (2,166 land on US, 1,891 on EU, zero elsewhere).
+
+**`Transaction ID` is the join key, not `Invoice ID`.** Unlike Adyen, the engine mints a fresh `psp_reference` per refund that equals the refund's own provider transaction id — 97 of 97. So the transaction id keys every operation type 1:1, while `Invoice ID` fans out to 2 on reversals. `match_key` is still the order reference for entity-level grouping; the transaction id is what the row-level join uses.
+
+**`Time Zone = GMT` is taken at face value, because it verifies.** The parsed `Date + Time` equals the engine's `captured_at_utc` to the second on 3,739 of 3,742 settled rows (the 3 misses are the date-format rows below). No `at time zone` conversion is applied — adding one would break every row.
+
+**Three PayPal EU rows are `MM/DD/YYYY` inside a `DD/MM/YYYY` file, and the export window decides which.** `ORD-507782/507783/507784` read as `DD/MM` land in March, September and December 2026 — outside the export's declared coverage. The rule: parse each row in its file's declared order, and where that lands outside the window, re-parse in the other order.
+
+The window is the export's own metadata, not a guess — the filenames declare `20260601_20260703`, so it lives in `dbt_project.yml` as `export_window_start` / `export_window_end` alongside the delimiter and encoding that `_sources.yml` already hardcodes per file. Nothing is read from the engine log; the engine independently agrees with all three re-parsed dates to the second, which is how we know the rule is right rather than how the rule works.
+
+Applied symmetrically to both files: US declares `MM/DD` and fires zero overrides, EU declares `DD/MM` and fires exactly three. The staging model exposes `date_format_overridden` and `assert_paypal_date_format_override_is_bounded` pins it to those three orders — if a future export changes its date handling the build fails rather than quietly moving money between months. Trusting the file-level format instead pushes two of the three out of June and invents a €29.97 break.
+
+Two things were ruled out. Deriving the window from the EU file's own unambiguous rows does not work: only days > 12 are self-evident, so the range starts 13 June and a genuine `03/06/2026` would be flipped to 6 March. Guessing per row from proximity to its neighbours is worse — it would silently repair a real transposition.
+
+**`Denied` rows carry a gross figure that is not money.** PayPal reports the attempted amount with `Fee = 0` and `Net = 0` on all 315 denied rows. They map to the engine's `declined` 1:1 and are excluded from every sum; they are counted, never added.
+
+**Signs are taken from the file.** PayPal already signs reversals negative. The engine stores them positive (`dq_issues.md` §4), so the engine side is the one that gets a derived sign, not PayPal.
+
+**PayPal's fee is the record; there is no contract to check it against.** `fee_schedule.csv` has no PayPal entry. The charge is exactly `round(gross × pct, 2) + fixed` on 3,646 of 3,646 settled sales — 3.49% + $0.49 USD, 2.90% + €0.35, 2.90% + £0.30. June's $3,908.96 — $2,208.46 US, $1,700.50 EU — is classified `psp_claims_fee_out_of_contract`, the same treatment as dLocal: booked as charged, with the contract named as the gap. Finance should retrieve the PayPal contract and confirm all three currency variants.
+
+**The fixed fee is per-currency, and the schedule cannot express that today.** `int__psp_transactions` zeroes a contracted fixed fee when `fixed_fee_currency` differs from the transaction currency — correct for a single-currency contract, wrong for PayPal, which charges a fixed fee denominated in whatever the customer paid. If PayPal is ever added to `fee_schedule` it needs one row per currency, not one row with a currency caveat.
+
+**The retained refund fee is reported, not booked.** PayPal returns `Fee = 0.00` on all 99 reversals — the original processing fee is kept. That is a real cost of the $909.65, €749.74 and £125.94 reversed across the export window, but no contract we hold states it and the export gives no way to separate "kept by policy" from "not applicable". It is named in the summary rather than classified.
+
+**Recognition is the capture instant, and it moves two US sales into July.** `ORD-507779` and `ORD-507780` are created 2026-06-30 23:59 and captured 2026-07-01 00:04. Both sides agree they are July, so they carry no discrepancy — but recognising on creation would flip them on the engine side only and open a $19.98 hole. USD, so no FX consequence either way.
+
+**`ORD-507786` gets its own cause: `engine_capture_not_recorded`.** The engine row is `pending` with no capture timestamp while PayPal reports the sale settled and charged its fee. Without it the row falls through to `psp_claims_captured_different_period`, which is wrong in a way that matters — the engine has no period at all, not a different one, so a lost capture would be filed as timing and read as self-correcting next month. It sits ahead of the period branches in `int__recon_classified`. $24.99, one row.
+
+**`psp_claims_*` now names the operation type rather than enumerating two of them.** The old chain had `psp_claims_sale` and `psp_claims_chargeback` and nothing for a refund, so PayPal's unbooked €24.99 refund fell through to the period branch as well. `'psp_claims_' || operation_type` covers all three and mirrors the existing `engine_claims_` branch. The distinction is worth keeping in the label: a sale the backend missed understates revenue, a reversal it never booked overstates it.

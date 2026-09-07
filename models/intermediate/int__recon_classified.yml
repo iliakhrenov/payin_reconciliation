@@ -33,7 +33,10 @@ models:
         description: >-
           psp_claims_* means the provider asserts something the backend does not.
           engine_* means the backend's own booking is at fault.
-          psp_claims_chargeback / psp_claims_sale: provider has a transaction the engine never logged.
+          psp_claims_sale / psp_claims_refund / psp_claims_chargeback: provider has a transaction
+          the engine never logged. The operation type names what kind, because a sale the backend
+          missed and a reversal it never booked are opposite errors — one understates revenue, the
+          other overstates it.
           engine_claims_sale: the mirror image — the backend settled a sale the provider never
           reported. Not an FX fault and not a booking error we can prove, so it names the backend
           as the party to go and ask.
@@ -42,6 +45,10 @@ models:
           settlement, while the engine booked it as settled. Unlike a decline this may still
           resolve either way, and the provider has already charged its fee — a different thing
           to chase, so a different cause.
+          engine_capture_not_recorded: the provider settled and charged its fee, and the backend
+          is still holding the transaction as pending with no capture timestamp. It sits ahead of
+          the period causes deliberately — the engine has no period at all here, not a different
+          one, and reading it as a boundary difference would file a lost capture as timing.
           psp_claims_partial_capture: provider settled less than it authorised; the engine booked the full amount.
           psp_claims_captured_different_period: same transaction, settled either side of the month boundary.
           psp_claims_duplicate_row: the export ships the same transaction more than once. We count
@@ -61,11 +68,13 @@ models:
               arguments:
                 values:
                   - matched
-                  - psp_claims_chargeback
                   - psp_claims_sale
+                  - psp_claims_refund
+                  - psp_claims_chargeback
                   - engine_claims_sale
                   - psp_claims_declined
                   - psp_claims_disputed
+                  - engine_capture_not_recorded
                   - psp_claims_partial_capture
                   - psp_claims_captured_different_period
                   - psp_claims_duplicate_row

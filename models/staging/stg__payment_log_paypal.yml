@@ -1,0 +1,106 @@
+version: 2
+
+models:
+  - name: stg__payment_log_paypal
+    description: >-
+      PayPal US and EU activity, one row per transaction. The two exports are one PSP with two
+      accounts: identical columns, different dialect — the EU file is semicolon-delimited cp1252
+      with comma decimals and DD/MM/YYYY dates, the US file comma-delimited UTF-8 with dot
+      decimals and MM/DD/YYYY. Both are unioned into one model and keyed by psp = paypal_us /
+      paypal_eu, matching the engine log's own split. Three EU rows are written MM/DD/YYYY inside
+      a DD/MM/YYYY file and are re-parsed against the declared export window; see
+      date_format_overridden. Timestamps are GMT and are PayPal's settlement instant — no
+      conversion is applied, and no authorisation timestamp exists in the file. One US
+      transaction ships twice; identical rows are collapsed and the surplus carried in
+      amount_local_duplicate. Signs come from the file: PayPal already reports reversals negative.
+    columns:
+      - name: psp
+        description: paypal_us or paypal_eu. The engine log splits PayPal the same way, so this is the join dimension.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [paypal_us, paypal_eu]
+
+      - name: psp_account
+        description: >-
+          Equal to psp. The export carries no merchant-account column — the account is the file.
+          Kept as a separate column so a future PayPal fee_schedule entry has something to key on.
+        data_tests: [not_null]
+
+      - name: psp_reference
+        description: >-
+          PayPal's Transaction ID. The engine mints a fresh psp_reference per refund equal to the
+          refund's own PayPal id — the opposite of Adyen — so this is 1:1 with the engine on every
+          operation type. Unique after the duplicate export line is collapsed.
+        data_tests: [not_null, unique]
+
+      - name: related_psp_reference
+        description: >-
+          PayPal's Reference Txn ID. Set on reversals only, pointing at the sale being reversed.
+          Not a join key; used to assert that every reversal resolves to a settled sale.
+
+      - name: order_ref
+        description: PayPal's Invoice ID. Joins to the engine log's order_id. Fans out to two rows on a reversed order.
+        data_tests: [not_null]
+
+      - name: operation_type
+        description: sale, refund or chargeback. Chargeback is PayPal's Payment Reversal.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [sale, refund, chargeback]
+
+      - name: status
+        description: >-
+          settled or declined. Declined is PayPal's Denied — the attempted amount is reported but
+          no money moved, and the fee and net columns are zero.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [settled, declined]
+
+      - name: amount_local
+        description: Gross as PayPal states it. Already signed — reversals negative, declines positive but not money.
+        data_tests: [not_null]
+
+      - name: amount_local_settled
+        description: Money that actually moved. Zero on a decline.
+        data_tests: [not_null]
+
+      - name: amount_local_duplicate
+        description: >-
+          Value of the surplus copies where the export ships a transaction more than once.
+          Null on every row the file states once.
+
+      - name: fee_local
+        description: >-
+          PayPal's Fee, sign-flipped to positive. Denominated in the transaction currency and
+          exactly round(gross x pct, 2) + fixed — 3.49% + $0.49, 2.90% + EUR 0.35, 2.90% + GBP 0.30.
+          Zero on declines and on reversals: PayPal keeps the original fee when a payment is
+          refunded. No PayPal contract is on file, so this is what the fee reconciliation reports.
+        data_tests: [not_null]
+
+      - name: net_local
+        description: PayPal's Net. Ties to gross less fee on every row.
+        data_tests: [not_null]
+
+      - name: created_at_utc
+        description: >-
+          PayPal's event timestamp, already UTC. On a settled row it is the capture instant and
+          equals the engine's captured_at_utc to the second; on a declined row it is when PayPal
+          refused, roughly 30 minutes after the engine's attempt. The file has no authorisation
+          timestamp, so creation and settlement are the same instant here.
+        data_tests: [not_null]
+
+      - name: settled_at_utc
+        description: Set on settled rows only. The recognition timestamp for the period cut.
+
+      - name: date_format_overridden
+        description: >-
+          True where the file's declared date order put the row outside the export window and the
+          other order was used instead. Exactly three EU rows, all read as MM/DD/YYYY. A rise here
+          means the export's date handling has changed and the rule needs revisiting.
+        data_tests: [not_null]

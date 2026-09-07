@@ -49,11 +49,11 @@ classified as (
       when in_psp and operation_type = 'sale' and psp_status = 'settled' then 'fee_not_contracted'
     end as net_cause,
     case
-      when not in_engine and operation_type = 'chargeback' then 'psp_claims_chargeback'
-      when not in_engine and operation_type = 'sale' then 'psp_claims_sale'
+      when not in_engine then 'psp_claims_' || operation_type
       when not in_psp and engine_status = 'settled' then 'engine_claims_' || operation_type
       when engine_status = 'settled' and psp_status = 'declined' then 'psp_claims_declined'
       when engine_status = 'settled' and psp_status = 'disputed' then 'psp_claims_disputed'
+      when engine_status = 'pending' and psp_status = 'settled' then 'engine_capture_not_recorded'
       when psp_amount_local_authorised is not null
         and psp_amount_local_settled <> psp_amount_local_authorised
         and engine_amount_local_settled = psp_amount_local_authorised then 'psp_claims_partial_capture'

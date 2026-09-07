@@ -10,6 +10,10 @@ clean-targets: ["target", "dbt_packages"]
 
 vars:
   reporting_month: '2026-06-01'
+  # Declared coverage of the provider exports, from their filenames. Used to resolve the
+  # ambiguous date rows in the PayPal EU export - see stg__payment_log_paypal.
+  export_window_start: '2026-06-01'
+  export_window_end: '2026-07-03'
 
 flags:
   send_anonymous_usage_stats: false

@@ -42,3 +42,12 @@ The 2 exceptions are real anomalies worth carrying into the reconciliation:
 - **The engine records no declined Google Play attempts and no chargebacks.** Every other PSP runs 7–8% declines. The backend is not initiating these purchases; it is ingesting Google's notifications, so the engine log is a copy of the provider feed rather than an independent record. The June tie of $0.00 should be read accordingly.
 
 Provider-side finding, needs Google: **six transactions billed at 30% against a contracted 15%**, all on 2026-06-17 between 02:21 and 07:30 LA, all US / USD / `sub_monthly` / $9.99, fee $3.00 where $1.50 was due. $9.00 overcharge. Charges either side of the window are billed correctly.
+
+9. PayPal profiling — one engine defect, two unbooked reversals, one provider artefact:
+
+- **new: `ORD-507786` capture never recorded.** `TXN-107960` (paypal_us) is `pending` with `captured_at_utc` empty. PayPal reports the $24.99 payment `Completed` at 2026-06-12 14:25 UTC and charged its $1.36 fee. Money moved, engine never learned. June understated by $24.99.
+- **new: two PayPal EU reversals absent from the engine.** `ORD-507788` chargeback (€59.99, 20 June) and `ORD-507806` refund (€24.99, 25 June). Both sales are in the engine and correct; the reversals have no engine row at all. Engine overstates June net revenue by €84.98 ($92.35). This is also the answer to item 5's remaining gaps: `TXN-107981` sits directly after `ORD-507806`'s sale and `TXN-107985` is the only other unaccounted gap — two missing ids, no matching `order_id` gap, which is the signature of an unbooked operation on an existing order. Item 5 is now closed: 107988 / `ORD-507811` is dLocal's `ORD-507812` case, 107981 and 107985 are these.
+- **item 1 confirmed and bounded on PayPal.** `TXN-107950` is the only PayPal FX defect: €59.99 priced at the 2 June rate on a 16 June transaction, $65.75 booked vs $65.19, +$0.56.
+- **provider-side, no action on the engine: `ORD-507809` is exported twice** by PayPal US — a byte-identical duplicate line. The engine has one row and is right.
+
+Also worth naming, not a defect: **the engine records no PayPal chargebacks at all**, and never has an `operation_type = 'CHARGEBACK'` row for either PayPal account. Adyen has 2. Whether that is a real absence or a missing ingestion path is unknown from the data — `ORD-507788` shows at least one occurred.
