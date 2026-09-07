@@ -97,7 +97,7 @@ Because both sides recognise at the same instant, dLocal has no Adyen-style mont
 
 ### 7. Engine FX faults land here
 
-All four engine FX defects in `dq_issues.md` are dLocal rows. June booked USD is $216,067.79 against $15,388.81 at the published as-of rate — **$200,678.97 of overstatement across four rows**, 99.6% of it one:
+All four engine FX defects are dLocal rows ([`action_items.md`](action_items.md) A1 and R2). June booked USD is $216,067.79 against $15,388.81 at the published as-of rate — **$200,678.97 of overstatement across four rows**, 99.6% of it one:
 
 ┌────────────┬─────┬──────────────┬─────────────┬─────────────┬──────────────┐
 │ txn        │ ccy │ local        │ rate applied│ correct     │ overstated   │
@@ -156,4 +156,4 @@ Four causes are new — the existing taxonomy had no home for them and forcing t
 - `psp_claims_duplicate_row` — an export-integrity defect. Naming it keeps the report tied to the file as delivered rather than silently correcting it.
 - `psp_fx_date_basis` — both sides agree on the local amount and price it on different days. Generalises to any provider that publishes only a settlement timestamp.
 
-`psp_claims_different_amount` is also new and deliberately last in the chain: it fires only when both sides settled, currencies agree, and no structural cause applies. `ORD-507807` lands there rather than in an `engine_*` cause because the convention names the claimant, not our verdict — the provider moved the money; `dq_issues.md` carries the judgment that the engine is the deviant.
+`psp_claims_different_amount` is also new and deliberately last in the chain: it fires only when both sides settled, currencies agree, and no structural cause applies. `ORD-507807` lands there rather than in an `engine_*` cause because the convention names the claimant, not our verdict — the provider moved the money; [`action_items.md`](action_items.md) A4 carries the judgment that the engine is the deviant.

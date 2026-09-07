@@ -16,7 +16,7 @@
 | paypal_eu | 1,891 | 1,851 | 2 | 1,891 |
 | paypal_us | 2,166 | 2,109 | 1 | 2,166 |
 
-`psp_reference` is null on every Google Play row — the only provider with no identifier at all. See `dq_issues.md` §8.
+`psp_reference` is null on every Google Play row — the only provider with no identifier at all. Raised as [`action_items.md`](action_items.md) A5.
 
 ### 2. Status and operation vocabularies are small and clean
 
@@ -28,7 +28,7 @@
 | settled | CHARGEBACK | 2 |
 | pending | SALE | **1** |
 
-Five combinations, no others. A refund or chargeback is never anything but `settled`; a decline is never anything but a `SALE`. The single `pending` row is ORD-507786, the lost capture in `dq_issues.md` §9.
+Five combinations, no others. A refund or chargeback is never anything but `settled`; a decline is never anything but a `SALE`. The single `pending` row is ORD-507786, the lost capture raised as [`action_items.md`](action_items.md) A2.
 
 Nulls: none anywhere except `psp_reference` (820, all Google Play) and `captured_at_utc` (563 — the 562 declines plus that one pending row). Every declined attempt correctly carries no capture time.
 
@@ -44,7 +44,7 @@ Nulls: none anywhere except `psp_reference` (820, all Google Play) and `captured
 
 Four providers cluster at 7.6–8.4% declines. Google Play has none, because the backend does not initiate those purchases — it writes its row from Google's notification. The engine log is a copy of the provider feed there rather than an independent record, which is what makes Google Play's clean tie weaker evidence than it looks.
 
-Chargebacks exist only for Adyen. PayPal has zero across both accounts and the whole window — yet the PayPal EU export contains one. That gap is `dq_issues.md` §9.
+Chargebacks exist only for Adyen. PayPal has zero across both accounts and the whole window — yet the PayPal EU export contains one. That gap is [`action_items.md`](action_items.md) A3.
 
 ### 4. FX arithmetic is internally consistent; the inputs are not always right
 
@@ -52,7 +52,7 @@ Chargebacks exist only for Adyen. PayPal has zero across both accounts and the w
 
 - USD rows carry rate exactly 1 on all 2,841. No exceptions.
 - **Three non-USD rows also carry rate exactly 1** — TXN-107963/107964/107965, all dLocal. $200,679.44 mis-booked. This is the report's headline defect.
-- `fx_date_applied` is the transaction date on 3,642 of 5,147 foreign-currency rows and an earlier date on 1,505 — never later. That is the as-of rule (`fx_rates` publishes business days only), not staleness. Two of those 1,505 are genuinely stale: `dq_issues.md` §1.
+- `fx_date_applied` is the transaction date on 3,642 of 5,147 foreign-currency rows and an earlier date on 1,505 — never later. That is the as-of rule (`fx_rates` publishes business days only), not staleness. Two of those 1,505 are genuinely stale: [`action_items.md`](action_items.md) R2.
 
 `captured_at_utc < created_at_utc` on zero rows.
 

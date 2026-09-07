@@ -30,8 +30,6 @@ Three further FX faults are immaterial in total ($1.06) but are the same class o
 | Provider fees | (829.42) | (751.25) | (2,249.20) | (1,700.50) | (2,208.46) | **(7,738.83)** |
 | **Net receipts** | **31,966.72** | **14,198.20** | **12,495.43** | **34,529.60** | **33,872.83** | **127,062.78** |
 
-Each line hands a clean number to the next. A dbt test fails the build if the identity stops holding.
-
 ## Discrepancy by cause
 
 **Total absolute discrepancy $205,576.14 across 21 transactions and 4,712 fee lines. Unexplained: $0.00.**
@@ -42,26 +40,30 @@ Each line hands a clean number to the next. A dbt test fails the build if the id
 | Gross — backend vs provider | 7,702 | 15 | 0 | 293.40 | (187.46) |
 | Fees — provider vs contract | 2,334 | 4,712 | 0 | 4,602.24 | (4,602.24) |
 
-Signed figures are the impact on net USD receipts. Negative means the backend's books overstate what we keep.
+Signed figures are the impact on net USD receipts. Negative means the payment engine's books overstate what we keep.
 
 ### What is worth acting on
 
-Each cause measured against the book it sits in — the backend's booked gross, the provider's gross, or the provider's fee bill.
+Six causes carry real money. Each is sized against the book it belongs to — that base changes from row to row, so it is spelled out rather than left as a bare percentage.
 
-| Cause | Provider | USD | % of its base |
-| --- | --- | ---: | ---: |
-| Fees with no contract on file | PayPal US | 2,208.46 | 100.00% |
-| Fees with no contract on file | PayPal EU | 1,700.50 | 100.00% |
-| FX conversion not applied | dLocal | 200,679.44 | **93.06%** |
-| Fees with no contract on file | dLocal | 682.56 | 90.86% |
-| Fee overcharge vs contract | Google Play | 9.00 | 0.40% |
-| Fee overcharge vs contract | Adyen | 1.72 | 0.21% |
+| Cause | Who has to fix it | USD | Sized against |
+| --- | --- | ---: | --- |
+| FX conversion not applied on 3 dLocal transactions | **Our payment engine** | 200,679.44 | 93% of everything our engine booked for dLocal |
+| Fees charged with no contract on file | **Our contract file** | 2,208.46 | all of PayPal US's June fee bill |
+| Fees charged with no contract on file | **Our contract file** | 1,700.50 | all of PayPal EU's June fee bill |
+| Fees charged with no contract on file | **Our contract file** | 682.56 | 91% of dLocal's June fee bill † |
+| Fee overcharge against contract | Google Play | 9.00 | 0.4% of Google Play's June fee bill |
+| Fee overcharge against contract | Adyen | 1.72 | 0.2% of Adyen's June fee bill |
 
-**Everything else — 17 causes across all five providers — totals $294.46 and none of it exceeds 20bps of its own base.** That is the whole gross reconciliation: five providers, 15 transactions, and not one of them material on its own.
+† Why 91% and not 100%: the other 9% is not contracted either — none of dLocal's fee bill is. The remaining $68.69 is billed on 109 declined attempts and one disputed transaction, where no money moved, so there is nothing to reconcile it against and it sits outside the fee scope entirely. dLocal is the only provider that charges on transactions that never settled; the other four return zero.
 
-So June has exactly two stories. One backend defect worth 93% of what the backend booked for dLocal, and $4,591.52 of fees we are paying without a contract to check them against. The rest is noise, and it is only in this report to prove it is noise.
+**Five of the six are ours.** Only the last two are a provider doing something we did not agree to; the top four are our engine mis-booking and our own contract file being incomplete. The dLocal FX fault in particular is not a dLocal problem — dLocal reported those three transactions correctly and our engine failed to convert them.
+
+So June has exactly two stories. One engine defect worth 93% of what we booked for dLocal, and $4,591.52 of fees we are paying without a contract to check them against.
 
 ### Gross variance — all 15 transactions
+
+Here is how the rest of the reconciliation looks like in detail:
 
 $187.46 net on $134.8k of settled volume: 0.14%. Fifteen transactions, individually named.
 
@@ -97,11 +99,13 @@ $7,738.83 charged in June. Only $3,078.62 of it can be checked against a contrac
 | PayPal EU | 1,700.50 | **no** | (1,700.50) |
 | PayPal US | 2,208.46 | **no** | (2,208.46) |
 
+dLocal is the only row where variance is smaller than the fee bill. The $68.69 difference is billed on declined and disputed transactions, which are outside the fee reconciliation — see the footnote above. It is uncontracted too, just unreconcilable.
+
 **Where contracts exist, the providers are close to right.** Two Adyen fees over by $1.72 total.
 
 **Google Play overcharged $9.00 — six transactions billed at 30% against a contracted 15%.** All on 2026-06-17 between 02:21 and 07:30 LA, all US / USD / `sub_monthly` / $9.99. Charges either side of that window are billed correctly, which reads as a pricing-tier misapplication for a few hours. Recoverable.
 
-**$4,591.52 of fees cannot be verified because we hold no contract.** dLocal charges a flat 4.5% and PayPal 3.49% + $0.49 (US) / 2.90% + €0.35 / 2.90% + £0.30 (EU), consistently on every settled sale. These look like real commercial terms, and they are booked as charged. But `fee_schedule.csv` has no dLocal or PayPal entry, so nothing independent confirms the rates. **Retrieving those two contracts is the single highest-value follow-up in this report** — it converts 59% of June's fee spend from unverifiable to checked.
+**$4,591.52 of fees cannot be verified because we hold no contract.** dLocal charges a flat 4.5% and PayPal 3.49% + $0.49 (US) / 2.90% + €0.35 / 2.90% + £0.30 (EU), consistently on every settled sale. These look like real commercial terms, and they are booked as charged. But contract fees data has no dLocal or PayPal entry, so nothing confirms the rates. **Retrieving those two contracts is the single highest-value follow-up in this report** — it converts 59% of June's fee spend from unverifiable to checked.
 
 ## Caveats
 
@@ -119,13 +123,13 @@ $7,738.83 charged in June. Only $3,078.62 of it can be checked against a contrac
 
 ## The numbers behind this
 
-`exports/recon_summary_2026-06.csv` — provider × scope × cause, with row counts, absolute and signed USD, the base each is measured against, and three share columns. Regenerated by the pipeline on every run, so it cannot drift from this summary.
+`exports/recon_summary_2026-06.csv` — provider × scope × cause, with row counts, absolute and signed USD, the base each is measured against, and three share columns.
 
 ## What we are asking for
 
 Detail, owners and evidence in [`action_items.md`](action_items.md).
 
 1. **Fix the FX conversion gap in the payment backend** — $200,679.50 mis-booked in one month on three transactions. Highest severity.
-2. **Retrieve the dLocal and PayPal contracts** — unlocks $4,591.52/month of unverifiable fees.
+2. **Retrieve the dLocal and PayPal contracts** — unlocks $4,591.52/month of unverifiable fees. If those are standard rates -- reflect them as a contract with a `is_default` flag.
 3. **Recover $9.00 from Google Play** and ask why the rate moved for four hours.
 4. **Three reversals and one capture never reached the backend** — $132.15 net. Worth understanding as a pattern, not four one-offs.

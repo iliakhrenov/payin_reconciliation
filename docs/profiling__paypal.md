@@ -80,7 +80,7 @@ Note for staging: the fixed fee here is per-currency, unlike Adyen's and Google'
 
 **ORD-507809 — duplicated export line.** The same $9.99 sale is exported twice, all thirteen fields identical. The engine has one row. Provider-side artefact, overstates PayPal by $9.99.
 
-**ORD-507788 and ORD-507806 — reversals the engine never booked.** Both sales are in the engine, settled and correct. PayPal then reports a chargeback (€59.99, 20 June) and a refund (€24.99, 25 June) with no counterpart in the engine at all. Corroborated by the `txn_id` sequence: `TXN-107981` is the gap immediately after `TXN-107980` (= `ORD-507806`'s sale), and `TXN-107985` is the only other unaccounted gap — two missing reversal ids for two missing reversals, with no matching `order_id` gap, which is what an unbooked operation on an existing order looks like. The engine overstates June net revenue by €84.98. See `dq_issues.md`.
+**ORD-507788 and ORD-507806 — reversals the engine never booked.** Both sales are in the engine, settled and correct. PayPal then reports a chargeback (€59.99, 20 June) and a refund (€24.99, 25 June) with no counterpart in the engine at all. Corroborated by the `txn_id` sequence: `TXN-107981` is the gap immediately after `TXN-107980` (= `ORD-507806`'s sale), and `TXN-107985` is the only other unaccounted gap — two missing reversal ids for two missing reversals, with no matching `order_id` gap, which is what an unbooked operation on an existing order looks like. The engine overstates June net revenue by €84.98. Raised as [`action_items.md`](action_items.md) A3.
 
 ### 6. Timezone: `GMT` is honest, verified against the engine
 
@@ -104,7 +104,7 @@ No provider row predates 2026-06-01.
 
 ### 9. Engine-side FX defect (not a PayPal difference)
 
-One PayPal row books the wrong USD: `TXN-107950` / `ORD-507776`, €59.99 priced at the 2 June rate on a 16 June transaction — $65.75 booked, $65.19 correct, **+$0.56 overstated**. Local amounts agree with PayPal exactly; this is an engine conversion defect, already carried in `dq_issues.md` §1, and it belongs in the FX lane rather than the gross-difference lane. It is the only one on PayPal.
+One PayPal row books the wrong USD: `TXN-107950` / `ORD-507776`, €59.99 priced at the 2 June rate on a 16 June transaction — $65.75 booked, $65.19 correct, **+$0.56 overstated**. Local amounts agree with PayPal exactly; this is an engine conversion defect, raised as [`action_items.md`](action_items.md) R2, and it belongs in the FX lane rather than the gross-difference lane. It is the only one on PayPal.
 
 ### 10. Close — residual zero
 

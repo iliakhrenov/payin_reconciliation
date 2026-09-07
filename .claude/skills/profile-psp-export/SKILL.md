@@ -168,7 +168,7 @@ Price findings in USD with the as-of rate (last published rate on or before the 
 
 `docs/profiling__<psp>.md`, structured as: shape line, then one numbered section per finding area — grain, join key coverage, fees, timezone and period. Every claim carries its number. Close with the total discrepancy, signed and absolute.
 
-Carry anything that is an engine-log defect rather than a provider quirk into `docs/dq_issues.md`. Record interpretation calls in `docs/assumptions.md`.
+Carry anything that is an engine-log defect rather than a provider quirk into `docs/action_items.md`, as an owned item with the dollars at risk. Record interpretation calls in `docs/assumptions.md`.
 
 ## Traps
 
@@ -176,4 +176,4 @@ Carry anything that is an engine-log defect rather than a provider quirk into `d
 - **DuckDB reserved words** break aliases: `rows`, `ref`, `asof` fail as *bare* aliases (`count(*) rows`) though `as rows` is accepted. `asof` fails even as a qualified reference (`asof.rate_date`) because of `ASOF JOIN` — so a lateral join aliased `asof` will not parse. Use `n_rows`, `order_ref`, `latest_rate` and keep `as` explicit.
 - **Blank vs null** — providers ship empty strings. `count(col)` and `col is null` disagree; test both.
 - **Aggregate agreement is not row agreement.** Two offsetting errors tie at the total. Always diff per state and per currency.
-- A provider row absent from the engine is a real finding, not a join bug — check it against the `txn_id`/`order_id` sequence gaps in `dq_issues.md` before assuming a mistake.
+- A provider row absent from the engine is a real finding, not a join bug — check it against the `txn_id`/`order_id` sequence gaps in `docs/profiling__payment_engine_log.md` before assuming a mistake.

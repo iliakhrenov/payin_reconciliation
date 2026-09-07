@@ -56,7 +56,7 @@ Six references break, all one-offs:
 │ ORD-507811 │ sale in Adyen, absent from engine             │ EUR +9.99  │ +10.86  │
 └────────────┴──────────────────────────────────────────────┴────────────┴─────────┘
 
-`ORD-507811` is the order_id gap flagged in dq_issues item 5 — confirmed as provider-has-it, engine-doesn't.
+`ORD-507811` is the `order_id` sequence gap named in [`profiling__payment_engine_log.md`](profiling__payment_engine_log.md) §5 — confirmed as provider-has-it, engine-doesn't.
 `ORD-507794` is a period-boundary case, not a loss: batch 26 authorises it in June, batch 27
 settles it in July.
 

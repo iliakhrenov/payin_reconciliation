@@ -43,12 +43,11 @@ All 9 files load. Row counts after header removal:
 
 Pre-processing makes the bytes readable, nothing more. These are interpretation, and are handled in staging with the calls recorded in [`assumptions.md`](assumptions.md):
 
-PayPal EU decimal commas and mixed date formats · dLocal minor units, inverted FX direction and one duplicated export line · timezone alignment (Adyen Europe/Amsterdam, Google Play America/Los_Angeles → UTC) · provider status vocabularies.
+- PayPal EU decimal commas and mixed date formats
+- dLocal minor units, inverted FX direction and one duplicated export line
+- timezone alignment (Adyen Europe/Amsterdam, Google Play America/Los_Angeles → UTC)
+- provider status vocabularies.
 
 **The two Google Play files are one ledger.** Staging unions `202606` and `202607_partial` before anything is counted — the June file is cut on LA-local dates and already contains a transaction that is July in UTC. Either file read alone gives a wrong June.
 
 Profiling a provider export before staging it follows the `profile-psp-export` skill (`.claude/skills/`); results land in `docs/profiling__<psp>.md`.
-
-## Out
-
-One file leaves the pipeline: `exports/recon_summary_<month>.csv`, written by a post-hook on `mart__recon_summary` so the deliverable is regenerated on every build and cannot drift from the model. Nothing is exported by hand.

@@ -1,6 +1,6 @@
 # Action items — June 2026 reconciliation
 
-Everything the reconciliation surfaced that needs someone outside this pipeline to act. Ordered by dollars at risk. Evidence for each sits in [`dq_issues.md`](dq_issues.md) and the profiling docs.
+Everything the reconciliation surfaced that needs someone outside this pipeline to act. Ordered by dollars at risk. Evidence for each sits in the profiling docs, one per input file.
 
 ## Payment backend (engineering)
 
@@ -23,9 +23,6 @@ ORD-507807: dLocal refunded BRL 99.95, exactly 50% of the sale. The backend book
 **A5 — Google Play transactions carry no provider reference at all.** `MEDIUM`
 `psp_reference` is null on all 820 Google Play rows — the only provider with no identifier. This month's reconciliation works because the capture timestamp happens to be an exact key on 820 of 820 rows, but that is a property of the data, not a designed identifier. Two purchases in the same second with the same SKU and country would be unresolvable.
 *Ask: persist Google's purchase token or order id.*
-
-**A6 — Reversal sign convention is not in the data.** `LOW`
-Refunds and chargebacks are stored positive. Every consumer of the log has to know to derive the sign, and any that does not will silently overstate revenue.
 
 ## Finance / commercial
 

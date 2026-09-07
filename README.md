@@ -61,7 +61,11 @@ Skimming the SQL cold, the four files that carry the actual thinking:
 
 Cause names state **who is claiming what**: `psp_claims_*` is the provider asserting something the backend does not, `engine_claims_*` the reverse, `engine_fx_*` the backend's own booking at fault. The prefix alone tells you which side to go and ask.
 
-**153 tests, and they are the argument.** The load-bearing ones assert properties, not row counts: `assert_recon_waterfall_closes` (backend + its bugs + provider variance = provider gross), `assert_recon_buckets_reconcile` (matched + explained + unexplained = an independently recomputed control total), `assert_fx_join_preserves_grain`, `assert_recon_grain`.
+**153 tests.** Most assert a property rather than count rows. Three carry the report:
+
+- **`assert_recon_buckets_reconcile`** — per provider and scope, matched + explained + unexplained must equal a control total recomputed from the transaction rows. If a dollar goes missing between the buckets, the build fails.
+- **`assert_recon_waterfall_closes`** — what the backend booked, plus its own FX faults, plus the provider variance, must equal what the provider says it took.
+- **`assert_recon_grain`** — one row per provider, match key and operation. A fan-out in the join would inflate every figure downstream and nothing else would notice.
 
 ## Docs
 
@@ -71,11 +75,10 @@ Cause names state **who is claiming what**: `psp_claims_*` is the provider asser
 | [action_items.md](docs/action_items.md) | What needs fixing, by whom, ranked |
 | [assumptions.md](docs/assumptions.md) | Every call made where the data was ambiguous, and why |
 | [pre_processing.md](docs/pre_processing.md) | What happens before dbt, and why |
-| [dq_issues.md](docs/dq_issues.md) | Working log — findings in discovery order, with evidence |
 | `profiling__*.md` | One per input file: grain, join key, fee formula, dollar-level accounting |
 
 Start with `assumptions.md` if you disagree with a number. Every judgment call is there with the evidence that settled it.
 
 ## About the data
 
-Synthetic data for a reconciliation exercise. "Lumo Wellness" is not a real company, the June 2026 period is in the future, and no file here contains real payment, customer, or provider data.
+Synthetic data for a reconciliation exercise.
