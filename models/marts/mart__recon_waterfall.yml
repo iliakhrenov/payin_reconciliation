@@ -1,0 +1,46 @@
+version: 2
+
+models:
+  - name: mart__recon_waterfall
+    description: >-
+      The waterfall the CFO summary opens with: what the backend booked, plus its own FX faults,
+      plus the provider variance, equals what the provider says it took - then fees carry that
+      down to net receipts. One row per provider per line, seven lines.
+
+      Derived entirely from mart__recon_summary, whose three scope bases already are the levels.
+      Anyone holding only the summary CSV can rebuild this table.
+
+      Kept at provider grain. A total row would sit at a different grain from the rest and invite
+      double-counting, so scripts/render_waterfall.py adds the Total column at render time.
+    columns:
+      - name: reporting_month
+        data_tests: [not_null]
+      - name: psp
+        data_tests: [not_null]
+      - name: line_seq
+        description: Presentation order, 1-7. The waterfall only reads correctly top to bottom.
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [1, 2, 3, 4, 5, 6, 7]
+              quote: false
+      - name: line_item
+        data_tests:
+          - not_null
+          - accepted_values:
+              values:
+                - backend_booked
+                - backend_fx_faults
+                - backend_restated
+                - provider_variance
+                - provider_gross
+                - provider_fees
+                - net_receipts
+      - name: usd
+        description: >-
+          Signed for presentation: fees and adverse variances are negative, so every line adds
+          to the one below it rather than needing a rule per row.
+        data_tests: [not_null]
+      - name: is_subtotal
+        description: True on backend_restated, provider_gross and net_receipts - the three lines that are sums of the ones above.
+        data_tests: [not_null]

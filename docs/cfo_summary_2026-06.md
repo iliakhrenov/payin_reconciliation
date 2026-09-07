@@ -2,11 +2,11 @@
 
 **Providers report $127,062.78 net for June across five accounts. The backend and the providers now tell the same story, and every dollar of difference is accounted for — nothing is unexplained.**
 
-The backend's own books said $335,668.57 gross. That figure is wrong by $200,679.50 and must be restated before anything else is discussed.
+Our backend payment engine said $335,668.57 gross. That figure is wrong by $200,679.50 and must be restated before anything else is discussed.
 
 ## The one number that matters
 
-**The payment backend overstates June gross revenue by $200,679.50.** Three dLocal transactions were booked with no currency conversion applied at all — local amounts entered the ledger as if they were dollars.
+**Our payment backend engine overstates June gross revenue by $200,679.50.** Three dLocal transactions were booked with no currency conversion applied at all — local amounts entered the ledger as if they were dollars.
 
 | Transaction | Currency | Local | Booked as | Actually worth | Overstated |
 | --- | --- | --- | --- | --- | --- |
@@ -20,7 +20,7 @@ Three further FX faults are immaterial in total ($1.06) but are the same class o
 
 ## June waterfall
 
-| | Adyen | dLocal | Google Play | PayPal EU | PayPal US | **Total** |
+|  | Adyen | dLocal | Google Play | PayPal EU | PayPal US | **Total** |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Backend booked | 32,912.09 | 215,642.53 | 14,744.63 | 36,323.01 | 36,046.31 | **335,668.57** |
 | Backend FX faults | 0.03 | (200,678.97) | — | (0.56) | — | **(200,679.50)** |

@@ -17,7 +17,7 @@ Reconciles five payment providers (PayPal US/EU, dLocal, Adyen, Google Play) aga
 ```bash
 uv sync
 uv run python scripts/prepare_inputs.py   # raw/ -> staged/, decode + normalize. required first.
-uv run dbt build                          # 12 models, 143 tests, writes the summary CSV
+uv run dbt build                          # 13 models, 153 tests, writes both CSVs
 ```
 
 Two commands from a clean clone. `dbt build` regenerates `exports/recon_summary_2026-06.csv` byte-identically — the CSV in this repo is not hand-made and cannot drift from the model.
@@ -32,11 +32,17 @@ No database to install — DuckDB runs in-process against `payin.duckdb`. `profi
 raw/  ──prepare_inputs.py──>  staged/  ──dbt──>  staging  ->  intermediate  ->  marts  ->  exports/*.csv
 ```
 
+Both CSVs in `exports/` are written by post-hooks, so neither can drift from the model. The waterfall table in the CFO summary is regenerated from the second one:
+
+```bash
+uv run python scripts/render_waterfall.py     # prints the markdown table, byte-identical to the doc
+```
+
 | Layer | What it does |
 | --- | --- |
 | `models/staging/` | One model per provider. Normalizes each export's own dialect into a common shape and derives a `match_key` from its **own** columns only — neither side ever reads the other's, so the two remain independent. |
 | `models/intermediate/` | `int__engine_log_fx_corrected` restates the backend's FX faults · `int__psp_transactions` unions the providers and applies contracted fees · `int__recon_matched` full-outer-joins the two sides · `int__recon_classified` assigns a root cause to every row. |
-| `models/marts/` | `mart__recon_summary` — the deliverable, at provider × scope × cause. |
+| `models/marts/` | `mart__recon_summary` — the deliverable, at provider × scope × cause · `mart__recon_waterfall` — the CFO summary's opening table, derived from the summary's own scope bases. |
 
 **Three scopes, three different counterparties**, and they never net against each other:
 
@@ -55,7 +61,7 @@ Skimming the SQL cold, the four files that carry the actual thinking:
 
 Cause names state **who is claiming what**: `psp_claims_*` is the provider asserting something the backend does not, `engine_claims_*` the reverse, `engine_fx_*` the backend's own booking at fault. The prefix alone tells you which side to go and ask.
 
-**143 tests, and they are the argument.** The load-bearing ones assert properties, not row counts: `assert_recon_waterfall_closes` (backend + its bugs + provider variance = provider gross), `assert_recon_buckets_reconcile` (matched + explained + unexplained = an independently recomputed control total), `assert_fx_join_preserves_grain`, `assert_recon_grain`.
+**153 tests, and they are the argument.** The load-bearing ones assert properties, not row counts: `assert_recon_waterfall_closes` (backend + its bugs + provider variance = provider gross), `assert_recon_buckets_reconcile` (matched + explained + unexplained = an independently recomputed control total), `assert_fx_join_preserves_grain`, `assert_recon_grain`.
 
 ## Docs
 
