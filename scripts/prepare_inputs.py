@@ -14,6 +14,8 @@ from normalize_encoding import normalize
 
 RAW = Path("raw")
 STAGED = Path("staged")
+# dbt writes the summary CSV here via a post-hook; DuckDB will not create the directory itself.
+EXPORTS = Path("exports")
 
 # filename -> encoding the provider declares, used only if the UTF-8 probe fails
 INPUTS = {
@@ -31,6 +33,7 @@ INPUTS = {
 
 def prepare() -> list[dict]:
     STAGED.mkdir(exist_ok=True)
+    EXPORTS.mkdir(exist_ok=True)
     manifest = []
 
     for filename, declared in INPUTS.items():
